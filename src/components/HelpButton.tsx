@@ -11,8 +11,9 @@ export default function HelpButton() {
       {/* Floating Help Button */}
       <button
         onClick={() => setShowModal(true)}
-        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl font-bold z-40 transition-transform hover:scale-110"
-        aria-label="Help"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-blue-600 hover:bg-blue-700 text-white w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg flex items-center justify-center text-xl sm:text-2xl font-bold z-40 transition-all hover:scale-110 active:scale-95"
+        aria-label="Open help and instructions"
+        title="Help & Instructions"
       >
         ?
       </button>
