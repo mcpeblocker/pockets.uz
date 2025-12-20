@@ -86,7 +86,7 @@ export async function sendEventNotification(eventTitle: string, eventSlug: strin
 }
 
 export async function sendSettlementNotification(
-  telegramUsername: string,
+  telegramId: string,
   participantName: string,
   eventTitle: string,
   currency: string,
@@ -100,9 +100,6 @@ export async function sendSettlementNotification(
     console.warn('Telegram bot token not configured.');
     return { success: false, error: 'Telegram not configured' };
   }
-
-  // Try to send to username (without @ prefix if they included it)
-  const username = telegramUsername.startsWith('@') ? telegramUsername.substring(1) : telegramUsername;
   
   const hasSettlements = settlementsForParticipant.toPay.length > 0 || settlementsForParticipant.toReceive.length > 0;
 
@@ -132,18 +129,10 @@ export async function sendSettlementNotification(
     text += '✅ <b>No action required!</b>\nYour expenses are already settled.';
   }
 
-  // Note: We can't directly message users by username without them starting a conversation first
-  // This is a limitation of Telegram Bot API. For now, we'll try sending to @username
-  // In production, you might want to direct users to start the bot first
-  try {
-    return await sendTelegramMessage({
-      chatId: `@${username}`,
-      text,
-      parseMode: 'HTML',
-    });
-  } catch (error) {
-    // If direct username messaging fails, log it but don't throw
-    console.log(`Could not send Telegram message to @${username}. User may need to start the bot first.`);
-    return { success: false, error: 'User needs to start bot first' };
-  }
+  // Send directly to telegram_id (chat_id)
+  return await sendTelegramMessage({
+    chatId: telegramId,
+    text,
+    parseMode: 'HTML',
+  });
 }

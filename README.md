@@ -144,19 +144,22 @@ npm start
 
 1. Click the event link shared by the organizer
 2. Click "Join This Event"
-3. Enter your name and email or Telegram username
-4. View all expenses and your share
-5. When the event closes, receive settlement instructions via email
+3. Enter your name and email address
+4. **Optional**: Sign in with Telegram to receive notifications via Telegram bot (in addition to email)
+5. View all expenses and your share
+6. When the event closes, receive settlement instructions via email (and Telegram if you signed in)
+7. If you joined by mistake, you can leave before the event is closed (as long as you haven't paid any expenses)
 
 ### For Organizers
 
-1. Sign in with your email (magic link, no password)
-2. Create a new event from your dashboard
+1. Sign in with your email (magic link, no password) or with Telegram
+2. Create a new event from your dashboard (select currency, add title and description)
 3. Share the event link with participants
 4. Add expenses as they occur
 5. Close the event when ready to settle
-6. Settlement calculations and emails are sent automatically
+6. Settlement calculations and notifications are sent automatically (via email and Telegram)
 7. Mark payments as "paid" as people settle up
+8. View payment statistics on the event page
 
 ## 🔒 Security
 

@@ -7,14 +7,13 @@ export async function joinEvent(formData: FormData) {
   const eventId = formData.get('eventId') as string;
   const name = formData.get('name') as string;
   const email = formData.get('email') as string;
-  const telegramUsername = formData.get('telegramUsername') as string;
 
   if (!eventId || !name) {
     return { error: 'Event ID and name are required' };
   }
 
-  if (!email && !telegramUsername) {
-    return { error: 'Please provide either email or Telegram username' };
+  if (!email) {
+    return { error: 'Email is required for settlement notifications' };
   }
 
   const supabase = await createClient();
@@ -34,6 +33,23 @@ export async function joinEvent(formData: FormData) {
     return { error: 'This event is closed and no longer accepting participants' };
   }
 
+  // Check if user is authenticated and has telegram_id
+  const { data: { user } } = await supabase.auth.getUser();
+  let userId = null;
+
+  if (user) {
+    // Get the user from our users table to check for telegram_id
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+    
+    if (userData) {
+      userId = userData.id;
+    }
+  }
+
   // Add participant
   const { data: participant, error } = await supabase
     .from('participants')
@@ -41,7 +57,7 @@ export async function joinEvent(formData: FormData) {
       event_id: eventId,
       name,
       email: email || null,
-      telegram_username: telegramUsername || null,
+      user_id: userId,
       payment_status: 'pending',
     })
     .select('id')

@@ -318,16 +318,25 @@ export async function closeEvent(eventId: string) {
       );
     }
 
-    // Send Telegram message if available
-    if (participant.telegram_username) {
-      await sendSettlementNotification(
-        participant.telegram_username,
-        participant.name,
-        event.title,
-        event.currency || 'USD',
-        relevantSettlements,
-        event.email_note
-      );
+    // Send Telegram message if user has telegram_id (via user_id)
+    if (participant.user_id) {
+      // Fetch user's telegram_id
+      const { data: userData } = await supabase
+        .from('users')
+        .select('telegram_id')
+        .eq('id', participant.user_id)
+        .single();
+
+      if (userData?.telegram_id) {
+        await sendSettlementNotification(
+          userData.telegram_id,
+          participant.name,
+          event.title,
+          event.currency || 'USD',
+          relevantSettlements,
+          event.email_note
+        );
+      }
     }
   }
 

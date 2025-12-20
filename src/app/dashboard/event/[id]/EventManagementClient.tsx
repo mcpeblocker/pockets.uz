@@ -394,11 +394,6 @@ export default function EventManagementClient({
                           {participant.email}
                         </p>
                       )}
-                      {participant.telegram_username && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {participant.telegram_username}
-                        </p>
-                      )}
                     </div>
                     {event.status === 'closed' && (
                       <button

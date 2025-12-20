@@ -27,7 +27,6 @@ export interface Participant {
   user_id: string | null;
   name: string;
   email: string | null;
-  telegram_username: string | null;
   payment_status: 'pending' | 'paid';
   created_at: string;
   updated_at: string;

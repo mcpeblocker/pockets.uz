@@ -244,21 +244,8 @@ export default function EventPageClient({
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="telegramUsername" className="block text-sm font-medium mb-2">
-                    Telegram Username
-                  </label>
-                  <input
-                    id="telegramUsername"
-                    name="telegramUsername"
-                    type="text"
-                    placeholder="@username"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                  />
-                </div>
-
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  * Provide at least email or Telegram username
+                  * Email is required for settlement notifications
                 </p>
 
                 {joinStatus === 'error' && (
