@@ -9,7 +9,10 @@ Pockets is a modern web application that simplifies group expense management. No
 - **No Registration Required**: Participants can join events and view expenses without creating an account
 - **Smart Split Calculation**: Automatically divides expenses equally among participants
 - **Minimized Settlements**: Uses an algorithm to minimize the number of transactions needed
-- **Email Notifications**: Automatic settlement emails when events close
+- **Multi-Currency Support**: Support for USD, EUR, GBP, JPY, KRW, CNY, INR, AUD, CAD, CHF and more
+- **Email Notifications**: Automatic personalized settlement emails when events close
+- **Telegram Notifications**: Optional Telegram messages to participants with telegram usernames
+- **Join/Leave Functionality**: Participants can leave events before they close (if they have no expenses)
 - **Payment Tracking**: Mark payments as paid or pending
 - **Mobile-First Design**: Responsive and accessible on all devices
 - **Real-time Updates**: See expenses and participants update instantly
@@ -89,8 +92,9 @@ In your Supabase project dashboard:
 2. Run the migrations in order:
    - First, copy and execute `supabase/migrations/20231220000000_initial_schema.sql`
    - Then, copy and execute `supabase/migrations/20231220000001_sync_auth_users.sql`
+   - Finally, copy and execute `supabase/migrations/20231220000002_add_currency_support.sql`
 
-This will create all necessary tables, Row Level Security policies, and automatic user syncing from Supabase Auth to the users table.
+This will create all necessary tables, Row Level Security policies, automatic user syncing from Supabase Auth to the users table, and currency support.
 
 ### 5. Configure Email (Gmail)
 

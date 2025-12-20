@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { calculateSettlements } from '@/lib/settlements';
 import { sendSettlementEmail } from '@/lib/email';
+import { sendSettlementNotification } from '@/lib/telegram';
 import { ensureUserExists } from '@/lib/user-sync';
 
 export async function createEvent(formData: FormData) {
@@ -25,6 +26,7 @@ export async function createEvent(formData: FormData) {
   const title = formData.get('title') as string;
   const description = formData.get('description') as string;
   const slug = formData.get('slug') as string;
+  const currency = (formData.get('currency') as string) || 'USD';
 
   if (!title || !slug) {
     return { error: 'Title and slug are required' };
@@ -49,6 +51,7 @@ export async function createEvent(formData: FormData) {
       slug,
       owner_id: user.id,
       status: 'open',
+      currency,
     })
     .select()
     .single();
@@ -291,19 +294,41 @@ export async function closeEvent(eventId: string) {
     return { error: 'Failed to close event' };
   }
 
-  // Send emails to participants
-  const participantsWithEmail = event.participants.filter((p: any) => p.email);
-  for (const participant of participantsWithEmail) {
-    await sendSettlementEmail(
-      participant.email,
-      event.title,
-      settlements.map(s => ({
-        from: s.fromName,
-        to: s.toName,
-        amount: s.amount,
-      })),
-      event.email_note
-    );
+  // Send personalized emails and Telegram messages to participants
+  for (const participant of event.participants) {
+    // Filter settlements relevant to this participant
+    const relevantSettlements = {
+      toPay: settlements
+        .filter(s => s.fromParticipantId === participant.id)
+        .map(s => ({ to: s.toName, amount: s.amount })),
+      toReceive: settlements
+        .filter(s => s.toParticipantId === participant.id)
+        .map(s => ({ from: s.fromName, amount: s.amount })),
+    };
+
+    // Send email if available
+    if (participant.email) {
+      await sendSettlementEmail(
+        participant.email,
+        participant.name,
+        event.title,
+        event.currency || 'USD',
+        relevantSettlements,
+        event.email_note
+      );
+    }
+
+    // Send Telegram message if available
+    if (participant.telegram_username) {
+      await sendSettlementNotification(
+        participant.telegram_username,
+        participant.name,
+        event.title,
+        event.currency || 'USD',
+        relevantSettlements,
+        event.email_note
+      );
+    }
   }
 
   revalidatePath('/dashboard');

@@ -1,3 +1,5 @@
+import { formatCurrency } from './currency';
+
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
 
@@ -81,4 +83,67 @@ export async function sendEventNotification(eventTitle: string, eventSlug: strin
     text,
     parseMode: 'HTML',
   });
+}
+
+export async function sendSettlementNotification(
+  telegramUsername: string,
+  participantName: string,
+  eventTitle: string,
+  currency: string,
+  settlementsForParticipant: {
+    toPay: Array<{ to: string; amount: number }>;
+    toReceive: Array<{ from: string; amount: number }>;
+  },
+  emailNote?: string
+) {
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.warn('Telegram bot token not configured.');
+    return { success: false, error: 'Telegram not configured' };
+  }
+
+  // Try to send to username (without @ prefix if they included it)
+  const username = telegramUsername.startsWith('@') ? telegramUsername.substring(1) : telegramUsername;
+  
+  const hasSettlements = settlementsForParticipant.toPay.length > 0 || settlementsForParticipant.toReceive.length > 0;
+
+  let text = `<b>💰 ${eventTitle} - Settlement</b>\n\nHi ${participantName}!\n\nThe event has been closed.\n\n`;
+
+  if (emailNote) {
+    text += `<b>Organizer note:</b>\n${emailNote}\n\n`;
+  }
+
+  if (settlementsForParticipant.toPay.length > 0) {
+    text += '<b>You need to pay:</b>\n';
+    settlementsForParticipant.toPay.forEach(s => {
+      text += `• Pay ${s.to}: ${formatCurrency(s.amount, currency)}\n`;
+    });
+    text += '\n';
+  }
+
+  if (settlementsForParticipant.toReceive.length > 0) {
+    text += '<b>You will receive:</b>\n';
+    settlementsForParticipant.toReceive.forEach(s => {
+      text += `• ${s.from} will pay you: ${formatCurrency(s.amount, currency)}\n`;
+    });
+    text += '\n';
+  }
+
+  if (!hasSettlements) {
+    text += '✅ <b>No action required!</b>\nYour expenses are already settled.';
+  }
+
+  // Note: We can't directly message users by username without them starting a conversation first
+  // This is a limitation of Telegram Bot API. For now, we'll try sending to @username
+  // In production, you might want to direct users to start the bot first
+  try {
+    return await sendTelegramMessage({
+      chatId: `@${username}`,
+      text,
+      parseMode: 'HTML',
+    });
+  } catch (error) {
+    // If direct username messaging fails, log it but don't throw
+    console.log(`Could not send Telegram message to @${username}. User may need to start the bot first.`);
+    return { success: false, error: 'User needs to start bot first' };
+  }
 }

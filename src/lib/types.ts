@@ -16,6 +16,7 @@ export interface Event {
   owner_id: string | null;
   status: 'open' | 'closed';
   email_note: string | null;
+  currency: string;
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +38,7 @@ export interface Expense {
   event_id: string;
   description: string;
   amount: number;
+  currency: string;
   paid_by_participant_id: string;
   created_at: string;
   updated_at: string;

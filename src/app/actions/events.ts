@@ -35,7 +35,7 @@ export async function joinEvent(formData: FormData) {
   }
 
   // Add participant
-  const { error } = await supabase
+  const { data: participant, error } = await supabase
     .from('participants')
     .insert({
       event_id: eventId,
@@ -43,7 +43,9 @@ export async function joinEvent(formData: FormData) {
       email: email || null,
       telegram_username: telegramUsername || null,
       payment_status: 'pending',
-    });
+    })
+    .select('id')
+    .single();
 
   if (error) {
     console.error('Error joining event:', error);
@@ -51,7 +53,7 @@ export async function joinEvent(formData: FormData) {
   }
 
   revalidatePath(`/event/[slug]`);
-  return { success: true };
+  return { success: true, participantId: participant?.id };
 }
 
 export async function getEventBySlug(slug: string) {

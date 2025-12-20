@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { Event } from '@/lib/types';
 import { createEvent } from '@/app/actions/dashboard';
+import { CURRENCIES } from '@/lib/currency';
 import Header from '@/components/Header';
 import Link from 'next/link';
 
@@ -107,6 +108,24 @@ export default function DashboardClient({ user, events }: DashboardClientProps) 
                   <p className="text-xs text-gray-500 mt-1">
                     Only lowercase letters, numbers, and hyphens
                   </p>
+                </div>
+
+                <div>
+                  <label htmlFor="currency" className="block text-sm font-medium mb-2">
+                    Currency *
+                  </label>
+                  <select
+                    id="currency"
+                    name="currency"
+                    defaultValue="USD"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                  >
+                    {CURRENCIES.map((currency) => (
+                      <option key={currency.code} value={currency.code}>
+                        {currency.symbol} {currency.name} ({currency.code})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

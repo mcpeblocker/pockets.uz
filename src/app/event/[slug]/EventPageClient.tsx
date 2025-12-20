@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Event, Participant, Expense, Settlement } from '@/lib/types';
 import { joinEvent } from '@/app/actions/events';
+import { formatCurrency } from '@/lib/currency';
 import Header from '@/components/Header';
 import HelpButton from '@/components/HelpButton';
 
@@ -22,9 +23,19 @@ export default function EventPageClient({
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [joinStatus, setJoinStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [joinMessage, setJoinMessage] = useState('');
+  const [myParticipantId, setMyParticipantId] = useState<string | null>(null);
 
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const sharePerPerson = participants.length > 0 ? totalExpenses / participants.length : 0;
+  const shareIfJoin = participants.length > 0 ? totalExpenses / (participants.length + 1) : totalExpenses;
+
+  // Check if user already joined from this device
+  useState(() => {
+    const storedId = localStorage.getItem(`event_${event.id}_participant`);
+    if (storedId) {
+      setMyParticipantId(storedId);
+    }
+  });
 
   async function handleJoinSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,8 +51,38 @@ export default function EventPageClient({
       setJoinStatus('success');
       setJoinMessage('Successfully joined the event!');
       setShowJoinForm(false);
+      // Store participant ID in localStorage
+      if (result.participantId) {
+        localStorage.setItem(`event_${event.id}_participant`, result.participantId);
+        setMyParticipantId(result.participantId);
+      }
       // Refresh page to show new participant
       window.location.reload();
+    }
+  }
+
+  async function handleCancelJoin() {
+    if (!myParticipantId || !confirm('Are you sure you want to leave this event?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/leave-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantId: myParticipantId, eventId: event.id }),
+      });
+
+      if (response.ok) {
+        localStorage.removeItem(`event_${event.id}_participant`);
+        setMyParticipantId(null);
+        window.location.reload();
+      } else {
+        alert('Failed to leave event. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error leaving event:', error);
+      alert('Failed to leave event. Please try again.');
     }
   }
 
@@ -74,7 +115,7 @@ export default function EventPageClient({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Total Expenses</p>
-                <p className="text-2xl font-bold">${totalExpenses.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(totalExpenses, event.currency)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Participants</p>
@@ -82,13 +123,35 @@ export default function EventPageClient({
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Per Person</p>
-                <p className="text-2xl font-bold">${sharePerPerson.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(sharePerPerson, event.currency)}</p>
               </div>
             </div>
           </div>
 
+          {/* Preview if joining */}
+          {event.status === 'open' && !showJoinForm && !myParticipantId && participants.length > 0 && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+              <p className="text-sm font-medium mb-2">💡 If you join this event:</p>
+              <p className="text-lg">
+                Per person cost will change from <strong>{formatCurrency(sharePerPerson, event.currency)}</strong> to <strong>{formatCurrency(shareIfJoin, event.currency)}</strong>
+              </p>
+            </div>
+          )}
+
+          {/* Cancel Join Button */}
+          {event.status === 'open' && myParticipantId && (
+            <div className="mb-6">
+              <button
+                onClick={handleCancelJoin}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+              >
+                Leave This Event
+              </button>
+            </div>
+          )}
+
           {/* Join Button */}
-          {event.status === 'open' && !showJoinForm && (
+          {event.status === 'open' && !showJoinForm && !myParticipantId && (
             <div className="mb-6">
               <button
                 onClick={() => setShowJoinForm(true)}
@@ -194,7 +257,7 @@ export default function EventPageClient({
                         Paid by {expense.paid_by?.name || 'Unknown'}
                       </p>
                     </div>
-                    <p className="text-lg font-bold">${expense.amount.toFixed(2)}</p>
+                    <p className="text-lg font-bold">{formatCurrency(expense.amount, event.currency)}</p>
                   </div>
                 ))}
               </div>
@@ -260,7 +323,7 @@ export default function EventPageClient({
                       <span className="font-medium">{settlement.to_name}</span>
                     </p>
                     <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                      ${settlement.amount.toFixed(2)}
+                      {formatCurrency(settlement.amount, event.currency)}
                     </p>
                   </div>
                 ))}

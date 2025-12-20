@@ -10,6 +10,7 @@ import {
   closeEvent,
   deleteEvent,
 } from '@/app/actions/dashboard';
+import { formatCurrency } from '@/lib/currency';
 import Header from '@/components/Header';
 import Link from 'next/link';
 
@@ -158,7 +159,7 @@ export default function EventManagementClient({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Total Expenses</p>
-                <p className="text-2xl font-bold">${totalExpenses.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${formatCurrency(totalExpenses, event.currency)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Participants</p>
@@ -166,7 +167,7 @@ export default function EventManagementClient({
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Per Person</p>
-                <p className="text-2xl font-bold">${sharePerPerson.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${formatCurrency(sharePerPerson, event.currency)}</p>
               </div>
             </div>
 
@@ -358,7 +359,7 @@ export default function EventManagementClient({
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <p className="text-lg font-bold">${expense.amount.toFixed(2)}</p>
+                      <p className="text-lg font-bold">${formatCurrency(expense.amount, event.currency)}</p>
                       {event.status === 'open' && (
                         <button
                           onClick={() => handleDeleteExpense(expense.id)}
@@ -438,7 +439,7 @@ export default function EventManagementClient({
                       <span className="font-medium">{settlement.to_name}</span>
                     </p>
                     <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                      ${settlement.amount.toFixed(2)}
+                      ${formatCurrency(settlement.amount, event.currency)}
                     </p>
                   </div>
                 ))}
