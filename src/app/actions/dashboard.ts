@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { calculateSettlements } from '@/lib/settlements';
 import { sendSettlementEmail } from '@/lib/email';
+import { ensureUserExists } from '@/lib/user-sync';
 
 export async function createEvent(formData: FormData) {
   const supabase = await createClient();
@@ -12,6 +13,13 @@ export async function createEvent(formData: FormData) {
 
   if (!user) {
     return { error: 'You must be signed in to create events' };
+  }
+
+  // Ensure user exists in the database
+  const syncResult = await ensureUserExists(user.id, user.email);
+  if (syncResult.error) {
+    console.error('Failed to sync user:', syncResult.error);
+    return { error: 'Failed to sync user account. Please try again.' };
   }
 
   const title = formData.get('title') as string;

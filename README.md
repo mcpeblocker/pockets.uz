@@ -86,10 +86,11 @@ TELEGRAM_ADMIN_ID=your_telegram_chat_id
 In your Supabase project dashboard:
 
 1. Go to SQL Editor
-2. Copy the contents of `supabase/migrations/20231220000000_initial_schema.sql`
-3. Paste and execute the SQL
+2. Run the migrations in order:
+   - First, copy and execute `supabase/migrations/20231220000000_initial_schema.sql`
+   - Then, copy and execute `supabase/migrations/20231220000001_sync_auth_users.sql`
 
-This will create all necessary tables and Row Level Security policies.
+This will create all necessary tables, Row Level Security policies, and automatic user syncing from Supabase Auth to the users table.
 
 ### 5. Configure Email (Gmail)
 
