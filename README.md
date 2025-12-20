@@ -109,8 +109,19 @@ This will create all necessary tables, Row Level Security policies, automatic us
 
 1. Create a bot with [@BotFather](https://t.me/botfather) on Telegram
 2. Copy the bot token to `.env` as `TELEGRAM_BOT_TOKEN`
-3. Get your Telegram user ID (use [@userinfobot](https://t.me/userinfobot))
-4. Add your user ID to `.env` as `TELEGRAM_ADMIN_ID`
+3. Copy your bot username (without @) to `.env` as `NEXT_PUBLIC_TELEGRAM_BOT_NAME`
+4. Get your Telegram user ID (use [@userinfobot](https://t.me/userinfobot))
+5. Add your user ID to `.env` as `TELEGRAM_ADMIN_ID`
+6. Set the domain for your bot with BotFather:
+   - Send `/setdomain` to BotFather
+   - Select your bot
+   - Enter your domain (e.g., `yourdomain.com`)
+
+**Telegram Login Widget:**
+The Telegram login widget allows users to authenticate with their Telegram account. This enables:
+- Automatic verification of Telegram account ownership
+- Direct messaging capabilities from the bot to users
+- Secure authentication using Telegram's OAuth flow
 
 ### 7. Run the Development Server
 

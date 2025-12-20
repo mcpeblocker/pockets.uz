@@ -29,6 +29,17 @@ export default function EventPageClient({
   const sharePerPerson = participants.length > 0 ? totalExpenses / participants.length : 0;
   const shareIfJoin = participants.length > 0 ? totalExpenses / (participants.length + 1) : totalExpenses;
 
+  // Calculate payment statistics for closed events
+  const paidCount = participants.filter(p => p.payment_status === 'paid').length;
+  const pendingCount = participants.filter(p => p.payment_status === 'pending').length;
+  const paidSettlements = settlements.filter(s => {
+    const fromParticipant = participants.find(p => p.id === s.from_participant_id);
+    return fromParticipant?.payment_status === 'paid';
+  });
+  const totalPaidAmount = paidSettlements.reduce((sum, s) => sum + s.amount, 0);
+  const totalSettlementAmount = settlements.reduce((sum, s) => sum + s.amount, 0);
+  const pendingAmount = totalSettlementAmount - totalPaidAmount;
+
   // Check if user already joined from this device
   useState(() => {
     const storedId = localStorage.getItem(`event_${event.id}_participant`);
@@ -127,6 +138,43 @@ export default function EventPageClient({
               </div>
             </div>
           </div>
+
+          {/* Payment Statistics for Closed Events */}
+          {event.status === 'closed' && settlements.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+              <h2 className="text-xl font-bold mb-4">Payment Status</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Paid</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {paidCount} / {participants.length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">participants</p>
+                </div>
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+                  <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                    {pendingCount} / {participants.length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">participants</p>
+                </div>
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Amount Paid</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {formatCurrency(totalPaidAmount, event.currency)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">settled</p>
+                </div>
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Amount Pending</p>
+                  <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                    {formatCurrency(pendingAmount, event.currency)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">outstanding</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Preview if joining */}
           {event.status === 'open' && !showJoinForm && !myParticipantId && participants.length > 0 && (
