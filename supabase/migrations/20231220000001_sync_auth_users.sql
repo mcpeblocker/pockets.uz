@@ -1,10 +1,6 @@
 -- Add trigger to sync auth.users to public.users table
 -- This ensures that when a user signs up, they are automatically added to the users table
 
--- First, update the users table to use auth.users id as primary key
-ALTER TABLE users DROP CONSTRAINT IF EXISTS users_pkey;
-ALTER TABLE users ADD PRIMARY KEY (id);
-
 -- Function to handle new user creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
