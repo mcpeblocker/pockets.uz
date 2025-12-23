@@ -33,23 +33,6 @@ export async function joinEvent(formData: FormData) {
     return { error: 'This event is closed and no longer accepting participants' };
   }
 
-  // Check if user is authenticated and has telegram_id
-  const { data: { user } } = await supabase.auth.getUser();
-  let userId = null;
-
-  if (user) {
-    // Get the user from our users table to check for telegram_id
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', user.id)
-      .single();
-    
-    if (userData) {
-      userId = userData.id;
-    }
-  }
-
   // Add participant
   const { data: participant, error } = await supabase
     .from('participants')
@@ -57,7 +40,6 @@ export async function joinEvent(formData: FormData) {
       event_id: eventId,
       name,
       email: email || null,
-      user_id: userId,
       payment_status: 'pending',
     })
     .select('id')

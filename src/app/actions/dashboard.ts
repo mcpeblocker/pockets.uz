@@ -5,7 +5,6 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { calculateSettlements } from '@/lib/settlements';
 import { sendSettlementEmail } from '@/lib/email';
-import { sendSettlementNotification } from '@/lib/telegram';
 import { ensureUserExists } from '@/lib/user-sync';
 
 export async function createEvent(formData: FormData) {
@@ -294,7 +293,7 @@ export async function closeEvent(eventId: string) {
     return { error: 'Failed to close event' };
   }
 
-  // Send personalized emails and Telegram messages to participants
+  // Send personalized emails to participants
   for (const participant of event.participants) {
     // Filter settlements relevant to this participant
     const relevantSettlements = {
@@ -316,27 +315,6 @@ export async function closeEvent(eventId: string) {
         relevantSettlements,
         event.email_note
       );
-    }
-
-    // Send Telegram message if user has telegram_id (via user_id)
-    if (participant.user_id) {
-      // Fetch user's telegram_id
-      const { data: userData } = await supabase
-        .from('users')
-        .select('telegram_id')
-        .eq('id', participant.user_id)
-        .single();
-
-      if (userData?.telegram_id) {
-        await sendSettlementNotification(
-          userData.telegram_id,
-          participant.name,
-          event.title,
-          event.currency || 'USD',
-          relevantSettlements,
-          event.email_note
-        );
-      }
     }
   }
 

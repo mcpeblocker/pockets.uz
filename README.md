@@ -11,7 +11,6 @@ Pockets is a modern web application that simplifies group expense management. No
 - **Minimized Settlements**: Uses an algorithm to minimize the number of transactions needed
 - **Multi-Currency Support**: Support for USD, EUR, GBP, JPY, KRW, CNY, INR, AUD, CAD, CHF and more
 - **Email Notifications**: Automatic personalized settlement emails when events close
-- **Telegram Notifications**: Optional Telegram messages to participants with telegram usernames
 - **Join/Leave Functionality**: Participants can leave events before they close (if they have no expenses)
 - **Payment Tracking**: Mark payments as paid or pending
 - **Mobile-First Design**: Responsive and accessible on all devices
@@ -25,14 +24,14 @@ Pockets is a modern web application that simplifies group expense management. No
 - **Database**: Supabase (PostgreSQL with Row Level Security)
 - **Authentication**: Supabase Auth (Magic Links)
 - **Email**: Nodemailer (Gmail SMTP)
-- **Notifications**: Telegram Bot API
+- **Notifications**: Telegram Bot API (optional, for support)
 
 ## 📋 Prerequisites
 
 - Node.js 18+ and npm
 - Supabase account and project
 - Gmail account for SMTP (with App Password)
-- Telegram Bot (optional, for support notifications)
+- Telegram Bot (optional, for support notifications to admin)
 
 ## 🚀 Getting Started
 
@@ -72,7 +71,7 @@ EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_gmail_app_password
 EMAIL_FROM=mcpeblockeruzs@gmail.com
 
-# Telegram Bot Configuration (Optional)
+# Telegram Bot Configuration (Optional - for support messages only)
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 TELEGRAM_ADMIN_ID=your_telegram_chat_id
 ```
@@ -92,9 +91,10 @@ In your Supabase project dashboard:
 2. Run the migrations in order:
    - First, copy and execute `supabase/migrations/20231220000000_initial_schema.sql`
    - Then, copy and execute `supabase/migrations/20231220000001_sync_auth_users.sql`
-   - Finally, copy and execute `supabase/migrations/20231220000002_add_currency_support.sql`
+   - Then, copy and execute `supabase/migrations/20231220000002_add_currency_support.sql`
+   - Finally, copy and execute `supabase/migrations/20231220000003_remove_telegram_username.sql`
 
-This will create all necessary tables, Row Level Security policies, automatic user syncing from Supabase Auth to the users table, and currency support.
+This will create all necessary tables, Row Level Security policies, automatic user syncing, and currency support.
 
 ### 5. Configure Email (Gmail)
 
@@ -107,21 +107,14 @@ This will create all necessary tables, Row Level Security policies, automatic us
 
 ### 6. Set Up Telegram Bot (Optional)
 
+**Note**: Telegram is now optional and only used for support messages to admin.
+
 1. Create a bot with [@BotFather](https://t.me/botfather) on Telegram
 2. Copy the bot token to `.env` as `TELEGRAM_BOT_TOKEN`
-3. Copy your bot username (without @) to `.env` as `NEXT_PUBLIC_TELEGRAM_BOT_NAME`
-4. Get your Telegram user ID (use [@userinfobot](https://t.me/userinfobot))
-5. Add your user ID to `.env` as `TELEGRAM_ADMIN_ID`
-6. Set the domain for your bot with BotFather:
-   - Send `/setdomain` to BotFather
-   - Select your bot
-   - Enter your domain (e.g., `yourdomain.com`)
+3. Get your Telegram user ID (use [@userinfobot](https://t.me/userinfobot))
+4. Add your user ID to `.env` as `TELEGRAM_ADMIN_ID`
 
-**Telegram Login Widget:**
-The Telegram login widget allows users to authenticate with their Telegram account. This enables:
-- Automatic verification of Telegram account ownership
-- Direct messaging capabilities from the bot to users
-- Secure authentication using Telegram's OAuth flow
+This will enable support form messages to be sent to you via Telegram.
 
 ### 7. Run the Development Server
 
@@ -145,19 +138,18 @@ npm start
 1. Click the event link shared by the organizer
 2. Click "Join This Event"
 3. Enter your name and email address
-4. **Optional**: Sign in with Telegram to receive notifications via Telegram bot (in addition to email)
-5. View all expenses and your share
-6. When the event closes, receive settlement instructions via email (and Telegram if you signed in)
-7. If you joined by mistake, you can leave before the event is closed (as long as you haven't paid any expenses)
+4. View all expenses and your share
+5. When the event closes, receive settlement instructions via email
+6. If you joined by mistake, you can leave before the event is closed (as long as you haven't paid any expenses)
 
 ### For Organizers
 
-1. Sign in with your email (magic link, no password) or with Telegram
+1. Sign in with your email (magic link, no password)
 2. Create a new event from your dashboard (select currency, add title and description)
 3. Share the event link with participants
 4. Add expenses as they occur
 5. Close the event when ready to settle
-6. Settlement calculations and notifications are sent automatically (via email and Telegram)
+6. Settlement calculations and emails are sent automatically
 7. Mark payments as "paid" as people settle up
 8. View payment statistics on the event page
 
@@ -168,15 +160,32 @@ npm start
 - Only event owners can modify their events
 - Authentication required only for event creation
 - Secure environment variable handling
+- Email magic link authentication (no passwords)
 
 ## 📱 Deployment
 
 ### Vercel (Recommended)
 
 1. Push your code to GitHub
-2. Import project in Vercel
-3. Add environment variables in Vercel dashboard
+2. Go to [vercel.com](https://vercel.com) and import your GitHub repository
+3. Configure environment variables in Vercel dashboard (same as `.env` file)
 4. Deploy!
+
+Vercel will automatically:
+- Detect Next.js framework
+- Install dependencies
+- Build the application
+- Deploy to production
+
+**Environment Variables to Add in Vercel:**
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SITE_URL` (set to your Vercel domain)
+- `EMAIL_USER`
+- `EMAIL_PASS`
+- `EMAIL_FROM`
+- `TELEGRAM_BOT_TOKEN` (optional)
+- `TELEGRAM_ADMIN_ID` (optional)
 
 ### Other Platforms
 
