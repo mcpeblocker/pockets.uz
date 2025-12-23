@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { signInWithEmail } from '@/app/actions/auth';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -74,6 +75,9 @@ export default function LoginPage() {
         <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           <p>We&apos;ll send you a magic link to sign in.</p>
           <p className="mt-2">No password required!</p>
+          <Link href="/" className="text-blue-600 hover:underline mt-4 inline-block">
+            Back to Home
+          </Link>
         </div>
       </div>
     </div>

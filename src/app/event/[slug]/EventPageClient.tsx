@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Event, Participant, Expense, Settlement } from '@/lib/types';
 import { joinEvent } from '@/app/actions/events';
 import { formatCurrency } from '@/lib/currency';
@@ -41,12 +41,12 @@ export default function EventPageClient({
   const pendingAmount = totalSettlementAmount - totalPaidAmount;
 
   // Check if user already joined from this device
-  useState(() => {
+  useEffect(() => {
     const storedId = localStorage.getItem(`event_${event.id}_participant`);
     if (storedId) {
       setMyParticipantId(storedId);
     }
-  });
+  }, [event.id]);
 
   async function handleJoinSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
