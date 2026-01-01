@@ -1,85 +1,89 @@
-'use server';
+"use server";
 
-import { createClient } from '@/lib/supabase-server';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-import { calculateSettlements } from '@/lib/settlements';
-import { sendSettlementEmail } from '@/lib/email';
-import { ensureUserExists } from '@/lib/user-sync';
+import { createClient } from "@/lib/supabase-server";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { calculateSettlements } from "@/lib/settlements";
+import { sendSettlementEmail } from "@/lib/email";
+import { ensureUserExists } from "@/lib/user-sync";
 
 export async function createEvent(formData: FormData) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'You must be signed in to create events' };
+    return { error: "You must be signed in to create events" };
   }
 
   // Ensure user exists in the database
   const syncResult = await ensureUserExists(user.id, user.email);
   if (syncResult.error) {
-    console.error('Failed to sync user:', syncResult.error);
-    return { error: 'Failed to sync user account. Please try again.' };
+    console.error("Failed to sync user:", syncResult.error);
+    return { error: "Failed to sync user account. Please try again." };
   }
 
-  const title = formData.get('title') as string;
-  const description = formData.get('description') as string;
-  const slug = formData.get('slug') as string;
-  const currency = (formData.get('currency') as string) || 'USD';
+  const title = formData.get("title") as string;
+  const description = formData.get("description") as string;
+  const slug = formData.get("slug") as string;
+  const currency = (formData.get("currency") as string) || "USD";
 
   if (!title || !slug) {
-    return { error: 'Title and slug are required' };
+    return { error: "Title and slug are required" };
   }
 
   // Check if slug is already taken
   const { data: existing } = await supabase
-    .from('events')
-    .select('id')
-    .eq('slug', slug)
+    .from("events")
+    .select("id")
+    .eq("slug", slug)
     .single();
 
   if (existing) {
-    return { error: 'This slug is already taken. Please choose another.' };
+    return { error: "This slug is already taken. Please choose another." };
   }
 
   const { data: event, error } = await supabase
-    .from('events')
+    .from("events")
     .insert({
       title,
       description: description || null,
       slug,
       owner_id: user.id,
-      status: 'open',
+      status: "open",
       currency,
     })
     .select()
     .single();
 
   if (error) {
-    console.error('Error creating event:', error);
-    return { error: 'Failed to create event' };
+    console.error("Error creating event:", error);
+    return { error: "Failed to create event" };
   }
 
-  revalidatePath('/dashboard');
+  revalidatePath("/dashboard");
   return { success: true, event };
 }
 
 export async function getUserEvents() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return [];
   }
 
   const { data: events, error } = await supabase
-    .from('events')
-    .select('*')
-    .eq('owner_id', user.id)
-    .order('created_at', { ascending: false });
+    .from("events")
+    .select("*")
+    .eq("owner_id", user.id)
+    .order("created_at", { ascending: false });
 
   if (error) {
-    console.error('Error fetching events:', error);
+    console.error("Error fetching events:", error);
     return [];
   }
 
@@ -88,174 +92,292 @@ export async function getUserEvents() {
 
 export async function addExpense(formData: FormData) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'You must be signed in' };
+    return { error: "You must be signed in" };
   }
 
-  const eventId = formData.get('eventId') as string;
-  const description = formData.get('description') as string;
-  const amount = parseFloat(formData.get('amount') as string);
-  const paidByParticipantId = formData.get('paidByParticipantId') as string;
+  const eventId = formData.get("eventId") as string;
+  const description = formData.get("description") as string;
+  const amount = parseFloat(formData.get("amount") as string);
+  const paidByParticipantId = formData.get("paidByParticipantId") as string;
 
   if (!eventId || !description || !amount || !paidByParticipantId) {
-    return { error: 'All fields are required' };
+    return { error: "All fields are required" };
   }
 
   if (amount <= 0) {
-    return { error: 'Amount must be greater than 0' };
+    return { error: "Amount must be greater than 0" };
   }
 
   // Verify ownership
   const { data: event } = await supabase
-    .from('events')
-    .select('owner_id')
-    .eq('id', eventId)
+    .from("events")
+    .select("owner_id")
+    .eq("id", eventId)
     .single();
 
   if (!event || event.owner_id !== user.id) {
-    return { error: 'Unauthorized' };
+    return { error: "Unauthorized" };
   }
 
-  const { error } = await supabase
-    .from('expenses')
-    .insert({
-      event_id: eventId,
-      description,
-      amount,
-      paid_by_participant_id: paidByParticipantId,
-    });
+  const { error } = await supabase.from("expenses").insert({
+    event_id: eventId,
+    description,
+    amount,
+    paid_by_participant_id: paidByParticipantId,
+  });
 
   if (error) {
-    console.error('Error adding expense:', error);
-    return { error: 'Failed to add expense' };
+    console.error("Error adding expense:", error);
+    return { error: "Failed to add expense" };
   }
 
-  revalidatePath('/dashboard');
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
 export async function deleteExpense(expenseId: string, eventId: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'Unauthorized' };
+    return { error: "Unauthorized" };
   }
 
   // Verify ownership
   const { data: event } = await supabase
-    .from('events')
-    .select('owner_id')
-    .eq('id', eventId)
+    .from("events")
+    .select("owner_id")
+    .eq("id", eventId)
     .single();
 
   if (!event || event.owner_id !== user.id) {
-    return { error: 'Unauthorized' };
+    return { error: "Unauthorized" };
   }
 
   const { error } = await supabase
-    .from('expenses')
+    .from("expenses")
     .delete()
-    .eq('id', expenseId);
+    .eq("id", expenseId);
 
   if (error) {
-    console.error('Error deleting expense:', error);
-    return { error: 'Failed to delete expense' };
+    console.error("Error deleting expense:", error);
+    return { error: "Failed to delete expense" };
   }
 
-  revalidatePath('/dashboard');
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
-export async function updatePaymentStatus(participantId: string, eventId: string, status: 'pending' | 'paid') {
+export async function addParticipant(formData: FormData) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'Unauthorized' };
+    return { error: "Unauthorized" };
+  }
+
+  const eventId = formData.get("eventId") as string;
+  const name = formData.get("name") as string;
+  const email = (formData.get("email") as string) || null;
+
+  if (!eventId || !name) {
+    return { error: "Event ID and name are required" };
   }
 
   // Verify ownership
   const { data: event } = await supabase
-    .from('events')
-    .select('owner_id')
-    .eq('id', eventId)
+    .from("events")
+    .select("owner_id, status")
+    .eq("id", eventId)
     .single();
 
   if (!event || event.owner_id !== user.id) {
-    return { error: 'Unauthorized' };
+    return { error: "Unauthorized" };
+  }
+
+  if (event.status === "closed") {
+    return { error: "Cannot add participants to closed events" };
+  }
+
+  const { error } = await supabase.from("participants").insert({
+    event_id: eventId,
+    name,
+    email,
+    payment_status: "pending",
+  });
+
+  if (error) {
+    console.error("Error adding participant:", error);
+    return { error: "Failed to add participant" };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/event/${eventId}`);
+  return { success: true };
+}
+
+export async function deleteParticipant(
+  participantId: string,
+  eventId: string
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
+
+  // Verify ownership
+  const { data: event } = await supabase
+    .from("events")
+    .select("owner_id, status")
+    .eq("id", eventId)
+    .single();
+
+  if (!event || event.owner_id !== user.id) {
+    return { error: "Unauthorized" };
+  }
+
+  if (event.status === "closed") {
+    return { error: "Cannot remove participants from closed events" };
+  }
+
+  // Check if participant has any expenses
+  const { data: expenses } = await supabase
+    .from("expenses")
+    .select("id")
+    .eq("paid_by_participant_id", participantId)
+    .limit(1);
+
+  if (expenses && expenses.length > 0) {
+    return { error: "Cannot remove participant who has paid for expenses" };
   }
 
   const { error } = await supabase
-    .from('participants')
-    .update({ payment_status: status })
-    .eq('id', participantId);
+    .from("participants")
+    .delete()
+    .eq("id", participantId);
 
   if (error) {
-    console.error('Error updating payment status:', error);
-    return { error: 'Failed to update payment status' };
+    console.error("Error deleting participant:", error);
+    return { error: "Failed to remove participant" };
   }
 
-  revalidatePath('/dashboard');
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/event/${eventId}`);
+  return { success: true };
+}
+
+export async function updatePaymentStatus(
+  participantId: string,
+  eventId: string,
+  status: "pending" | "paid"
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
+
+  // Verify ownership and get event slug
+  const { data: event } = await supabase
+    .from("events")
+    .select("owner_id, slug")
+    .eq("id", eventId)
+    .single();
+
+  if (!event || event.owner_id !== user.id) {
+    return { error: "Unauthorized" };
+  }
+
+  const { error } = await supabase
+    .from("participants")
+    .update({ payment_status: status })
+    .eq("id", participantId);
+
+  if (error) {
+    console.error("Error updating payment status:", error);
+    return { error: "Failed to update payment status" };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/event/${eventId}`);
+  revalidatePath(`/event/${event.slug}`);
   return { success: true };
 }
 
 export async function updateEmailNote(eventId: string, emailNote: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'Unauthorized' };
+    return { error: "Unauthorized" };
   }
 
   // Verify ownership
   const { data: event } = await supabase
-    .from('events')
-    .select('owner_id')
-    .eq('id', eventId)
+    .from("events")
+    .select("owner_id")
+    .eq("id", eventId)
     .single();
 
   if (!event || event.owner_id !== user.id) {
-    return { error: 'Unauthorized' };
+    return { error: "Unauthorized" };
   }
 
   const { error } = await supabase
-    .from('events')
+    .from("events")
     .update({ email_note: emailNote })
-    .eq('id', eventId);
+    .eq("id", eventId);
 
   if (error) {
-    console.error('Error updating email note:', error);
-    return { error: 'Failed to update email note' };
+    console.error("Error updating email note:", error);
+    return { error: "Failed to update email note" };
   }
 
-  revalidatePath('/dashboard');
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
 export async function closeEvent(eventId: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'Unauthorized' };
+    return { error: "Unauthorized" };
   }
 
   // Verify ownership and get event details
   const { data: event } = await supabase
-    .from('events')
-    .select('*, participants(*), expenses(*)')
-    .eq('id', eventId)
+    .from("events")
+    .select("*, participants(*), expenses(*)")
+    .eq("id", eventId)
     .single();
 
   if (!event || event.owner_id !== user.id) {
-    return { error: 'Unauthorized' };
+    return { error: "Unauthorized" };
   }
 
-  if (event.status === 'closed') {
-    return { error: 'Event is already closed' };
+  if (event.status === "closed") {
+    return { error: "Event is already closed" };
   }
 
   // Calculate settlements
@@ -264,9 +386,9 @@ export async function closeEvent(eventId: string) {
   // Save settlements to database
   if (settlements.length > 0) {
     const { error: settlementsError } = await supabase
-      .from('settlements')
+      .from("settlements")
       .insert(
-        settlements.map(s => ({
+        settlements.map((s) => ({
           event_id: eventId,
           from_participant_id: s.fromParticipantId,
           to_participant_id: s.toParticipantId,
@@ -277,20 +399,20 @@ export async function closeEvent(eventId: string) {
       );
 
     if (settlementsError) {
-      console.error('Error saving settlements:', settlementsError);
-      return { error: 'Failed to save settlements' };
+      console.error("Error saving settlements:", settlementsError);
+      return { error: "Failed to save settlements" };
     }
   }
 
   // Close the event
   const { error: closeError } = await supabase
-    .from('events')
-    .update({ status: 'closed' })
-    .eq('id', eventId);
+    .from("events")
+    .update({ status: "closed" })
+    .eq("id", eventId);
 
   if (closeError) {
-    console.error('Error closing event:', closeError);
-    return { error: 'Failed to close event' };
+    console.error("Error closing event:", closeError);
+    return { error: "Failed to close event" };
   }
 
   // Send personalized emails to participants
@@ -298,11 +420,11 @@ export async function closeEvent(eventId: string) {
     // Filter settlements relevant to this participant
     const relevantSettlements = {
       toPay: settlements
-        .filter(s => s.fromParticipantId === participant.id)
-        .map(s => ({ to: s.toName, amount: s.amount })),
+        .filter((s) => s.fromParticipantId === participant.id)
+        .map((s) => ({ to: s.toName, amount: s.amount })),
       toReceive: settlements
-        .filter(s => s.toParticipantId === participant.id)
-        .map(s => ({ from: s.fromName, amount: s.amount })),
+        .filter((s) => s.toParticipantId === participant.id)
+        .map((s) => ({ from: s.fromName, amount: s.amount })),
     };
 
     // Send email if available
@@ -311,47 +433,46 @@ export async function closeEvent(eventId: string) {
         participant.email,
         participant.name,
         event.title,
-        event.currency || 'USD',
+        event.currency || "USD",
         relevantSettlements,
         event.email_note
       );
     }
   }
 
-  revalidatePath('/dashboard');
+  revalidatePath("/dashboard");
   revalidatePath(`/event/${event.slug}`);
   return { success: true };
 }
 
 export async function deleteEvent(eventId: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'Unauthorized' };
+    return { error: "Unauthorized" };
   }
 
   // Verify ownership
   const { data: event } = await supabase
-    .from('events')
-    .select('owner_id')
-    .eq('id', eventId)
+    .from("events")
+    .select("owner_id")
+    .eq("id", eventId)
     .single();
 
   if (!event || event.owner_id !== user.id) {
-    return { error: 'Unauthorized' };
+    return { error: "Unauthorized" };
   }
 
-  const { error } = await supabase
-    .from('events')
-    .delete()
-    .eq('id', eventId);
+  const { error } = await supabase.from("events").delete().eq("id", eventId);
 
   if (error) {
-    console.error('Error deleting event:', error);
-    return { error: 'Failed to delete event' };
+    console.error("Error deleting event:", error);
+    return { error: "Failed to delete event" };
   }
 
-  revalidatePath('/dashboard');
-  redirect('/dashboard');
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }

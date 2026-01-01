@@ -139,38 +139,61 @@ export default function EventPageClient({
             </div>
           </div>
 
-          {/* Payment Statistics for Closed Events */}
-          {event.status === 'closed' && settlements.length > 0 && (
+          {/* Payment Statistics */}
+          {participants.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-              <h2 className="text-xl font-bold mb-4">Payment Status</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <h2 className="text-xl font-bold mb-4">Payment Tracking</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <p className="text-sm text-gray-600 dark:text-gray-400">Paid</p>
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {paidCount} / {participants.length}
+                    {paidCount}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">participants</p>
                 </div>
                 <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                   <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
                   <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                    {pendingCount} / {participants.length}
+                    {pendingCount}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">participants</p>
                 </div>
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {participants.length}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">participants</p>
+                </div>
+                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Your Share</p>
+                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    {formatCurrency(sharePerPerson, event.currency)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">per person</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Payment Statistics for Closed Events */}
+          {event.status === 'closed' && settlements.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+              <h2 className="text-xl font-bold mb-4">Settlement Status</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Amount Paid</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Amount Settled</p>
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                     {formatCurrency(totalPaidAmount, event.currency)}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">settled</p>
+                  <p className="text-xs text-gray-500 mt-1">paid so far</p>
                 </div>
                 <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Amount Pending</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Amount Outstanding</p>
                   <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                     {formatCurrency(pendingAmount, event.currency)}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">outstanding</p>
+                  <p className="text-xs text-gray-500 mt-1">remaining</p>
                 </div>
               </div>
             </div>
@@ -311,25 +334,23 @@ export default function EventPageClient({
                     key={participant.id}
                     className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                   >
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium">{participant.name}</p>
-                      {participant.email && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {participant.email}
+                      {!participant.email && (
+                        <p className="text-xs text-gray-500 dark:text-gray-500 italic mt-0.5">
+                          Added by organizer
                         </p>
                       )}
                     </div>
-                    {event.status === 'closed' && (
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          participant.payment_status === 'paid'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                        }`}
-                      >
-                        {participant.payment_status === 'paid' ? 'Paid' : 'Pending'}
-                      </span>
-                    )}
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        participant.payment_status === 'paid'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                      }`}
+                    >
+                      {participant.payment_status === 'paid' ? 'Paid ✓' : 'Pending'}
+                    </span>
                   </div>
                 ))}
               </div>

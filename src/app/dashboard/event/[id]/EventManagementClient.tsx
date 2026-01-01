@@ -9,6 +9,8 @@ import {
   updateEmailNote,
   closeEvent,
   deleteEvent,
+  addParticipant,
+  deleteParticipant,
 } from "@/app/actions/dashboard";
 import { formatCurrency } from "@/lib/currency";
 import Header from "@/components/Header";
@@ -28,12 +30,17 @@ export default function EventManagementClient({
   settlements,
 }: EventManagementClientProps) {
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [showEmailNote, setShowEmailNote] = useState(false);
   const [emailNote, setEmailNote] = useState(event.email_note || "");
   const [expenseStatus, setExpenseStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [expenseMessage, setExpenseMessage] = useState("");
+  const [participantStatus, setParticipantStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [participantMessage, setParticipantMessage] = useState("");
 
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const sharePerPerson =
@@ -57,12 +64,43 @@ export default function EventManagementClient({
     }
   }
 
+  async function handleAddParticipant(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setParticipantStatus("loading");
+
+    const formData = new FormData(e.currentTarget);
+    const result = await addParticipant(formData);
+
+    if (result.error) {
+      setParticipantStatus("error");
+      setParticipantMessage(result.error);
+    } else {
+      setParticipantStatus("success");
+      setParticipantMessage("Participant added successfully!");
+      setShowAddParticipant(false);
+      window.location.reload();
+    }
+  }
+
   async function handleDeleteExpense(expenseId: string) {
     if (!confirm("Are you sure you want to delete this expense?")) {
       return;
     }
 
     const result = await deleteExpense(expenseId, event.id);
+    if (result.error) {
+      alert(result.error);
+    } else {
+      window.location.reload();
+    }
+  }
+
+  async function handleDeleteParticipant(participantId: string) {
+    if (!confirm("Are you sure you want to remove this participant?")) {
+      return;
+    }
+
+    const result = await deleteParticipant(participantId, event.id);
     if (result.error) {
       alert(result.error);
     } else {
@@ -276,6 +314,18 @@ export default function EventManagementClient({
             </div>
           )}
 
+          {/* Add Participant Button */}
+          {event.status === "open" && (
+            <div className="mb-6">
+              <button
+                onClick={() => setShowAddParticipant(true)}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg"
+              >
+                Add Participant Manually
+              </button>
+            </div>
+          )}
+
           {/* Add Expense Form */}
           {showAddExpense && event.status === "open" && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
@@ -371,6 +421,82 @@ export default function EventManagementClient({
             </div>
           )}
 
+          {/* Add Participant Form */}
+          {showAddParticipant && event.status === "open" && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+              <h2 className="text-xl font-bold mb-4">Add Participant Manually</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Add participants who agreed to split but haven't joined via the public link.
+              </p>
+              <form onSubmit={handleAddParticipant} className="space-y-4">
+                <input type="hidden" name="eventId" value={event.id} />
+
+                <div>
+                  <label
+                    htmlFor="participantName"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Name *
+                  </label>
+                  <input
+                    id="participantName"
+                    name="name"
+                    type="text"
+                    required
+                    placeholder="John Doe"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="participantEmail"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Email (optional)
+                  </label>
+                  <input
+                    id="participantEmail"
+                    name="email"
+                    type="email"
+                    placeholder="john@example.com"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Leave empty if you don't have their email. They won't receive settlement notifications.
+                  </p>
+                </div>
+
+                {participantStatus === "error" && (
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-800 dark:text-red-200">
+                    {participantMessage}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={participantStatus === "loading"}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-medium py-2 px-4 rounded-lg"
+                  >
+                    {participantStatus === "loading" ? "Adding..." : "Add Participant"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddParticipant(false);
+                      setParticipantStatus("idle");
+                      setParticipantMessage("");
+                    }}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
           {/* Warning if no participants */}
           {participants.length === 0 && event.status === "open" && (
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
@@ -434,15 +560,19 @@ export default function EventManagementClient({
                     key={participant.id}
                     className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
                   >
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium">{participant.name}</p>
-                      {participant.email && (
+                      {participant.email ? (
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           {participant.email}
                         </p>
+                      ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-500 italic">
+                          No email (won't receive settlement notifications)
+                        </p>
                       )}
                     </div>
-                    {event.status === "closed" && (
+                    <div className="flex items-center gap-3">
                       <button
                         onClick={() =>
                           handleUpdatePaymentStatus(
@@ -452,17 +582,25 @@ export default function EventManagementClient({
                               : "paid"
                           )
                         }
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                           participant.payment_status === "paid"
-                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-200"
+                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 hover:bg-yellow-200"
                         }`}
                       >
                         {participant.payment_status === "paid"
                           ? "Paid ✓"
                           : "Mark as Paid"}
                       </button>
-                    )}
+                      {event.status === "open" && (
+                        <button
+                          onClick={() => handleDeleteParticipant(participant.id)}
+                          className="text-red-600 hover:text-red-700 text-sm font-medium"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
