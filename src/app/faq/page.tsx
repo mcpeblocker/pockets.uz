@@ -9,7 +9,7 @@ export default function FAQPage() {
     },
     {
       question: 'How do I create an event?',
-      answer: 'Sign in using the magic link sent to your email, then go to your dashboard and click "Create Event". Give your event a title and a unique URL slug, and you\'re ready to start adding expenses!',
+      answer: 'Sign up for an account or sign in with your email and password, then go to your dashboard and click "Create Event". Give your event a title and a unique URL slug, and you\'re ready to start adding expenses!',
     },
     {
       question: 'How do I join an event?',

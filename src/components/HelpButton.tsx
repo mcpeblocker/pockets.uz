@@ -46,7 +46,7 @@ export default function HelpButton() {
               <div>
                 <h3 className="text-lg font-bold mb-2">For Organizers</h3>
                 <ol className="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-400">
-                  <li>Sign in with your email (magic link, no password needed)</li>
+                  <li>Sign up or sign in with your email and password</li>
                   <li>Create a new event from your dashboard</li>
                   <li>Share the event link with participants</li>
                   <li>Add expenses as they occur</li>
