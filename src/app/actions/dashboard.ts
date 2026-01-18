@@ -15,9 +15,9 @@ async function logEventAction(
   action: string,
   userId: string | null,
   participantId: string | null = null,
-  details: Record<string, any> | null = null
+  details: Record<string, any> | null = null,
 ) {
-  await supabase.rpc('log_event_action', {
+  await supabase.rpc("log_event_action", {
     p_event_id: eventId,
     p_action: action,
     p_user_id: userId,
@@ -54,7 +54,9 @@ export async function createEvent(formData: FormData) {
 
   // Validate slug format
   if (!/^[a-z0-9-]+$/.test(slug)) {
-    return { error: "Slug can only contain lowercase letters, numbers, and hyphens" };
+    return {
+      error: "Slug can only contain lowercase letters, numbers, and hyphens",
+    };
   }
 
   // Check if slug is already taken
@@ -86,7 +88,10 @@ export async function createEvent(formData: FormData) {
     return { error: "Failed to create event" };
   }
 
-  await logEventAction(supabase, event.id, "event_created", user.id, null, { title, slug });
+  await logEventAction(supabase, event.id, "event_created", user.id, null, {
+    title,
+    slug,
+  });
 
   revalidatePath("/dashboard");
   return { success: true, event };
@@ -146,7 +151,7 @@ export async function addExpense(formData: FormData) {
   // Verify ownership
   const { data: event } = await supabase
     .from("events")
-    .select("owner_id, status, currency")
+    .select("owner_id, status, currency, slug")
     .eq("id", eventId)
     .single();
 
@@ -155,7 +160,10 @@ export async function addExpense(formData: FormData) {
   }
 
   if (event.status === "closed") {
-    return { error: "Cannot add expenses to closed events. Please reopen the event first." };
+    return {
+      error:
+        "Cannot add expenses to closed events. Please reopen the event first.",
+    };
   }
 
   // Check if participant exists
@@ -196,7 +204,7 @@ export async function addExpense(formData: FormData) {
     if (splitsJson) {
       try {
         const splits = JSON.parse(splitsJson);
-        
+
         // Validate splits
         const validation = validateExpenseSplits(amount, splits);
         if (!validation.valid) {
@@ -271,7 +279,7 @@ export async function updateExpense(expenseId: string, formData: FormData) {
   // Verify ownership
   const { data: event } = await supabase
     .from("events")
-    .select("owner_id, status")
+    .select("owner_id, status, slug")
     .eq("id", eventId)
     .single();
 
@@ -280,7 +288,10 @@ export async function updateExpense(expenseId: string, formData: FormData) {
   }
 
   if (event.status === "closed") {
-    return { error: "Cannot update expenses in closed events. Please reopen the event first." };
+    return {
+      error:
+        "Cannot update expenses in closed events. Please reopen the event first.",
+    };
   }
 
   // Update expense
@@ -309,7 +320,7 @@ export async function updateExpense(expenseId: string, formData: FormData) {
     if (splitsJson) {
       try {
         const splits = JSON.parse(splitsJson);
-        
+
         // Validate splits
         const validation = validateExpenseSplits(amount, splits);
         if (!validation.valid) {
@@ -372,7 +383,10 @@ export async function deleteExpense(expenseId: string, eventId: string) {
   }
 
   if (event.status === "closed") {
-    return { error: "Cannot delete expenses from closed events. Please reopen the event first." };
+    return {
+      error:
+        "Cannot delete expenses from closed events. Please reopen the event first.",
+    };
   }
 
   const { error } = await supabase
@@ -417,7 +431,7 @@ export async function addParticipant(formData: FormData) {
   // Verify ownership
   const { data: event } = await supabase
     .from("events")
-    .select("owner_id, status")
+    .select("owner_id, status, slug")
     .eq("id", eventId)
     .single();
 
@@ -426,7 +440,10 @@ export async function addParticipant(formData: FormData) {
   }
 
   if (event.status === "closed") {
-    return { error: "Cannot add participants to closed events. Please reopen the event first." };
+    return {
+      error:
+        "Cannot add participants to closed events. Please reopen the event first.",
+    };
   }
 
   // V2: Check for duplicate email in same event
@@ -439,8 +456,8 @@ export async function addParticipant(formData: FormData) {
       .single();
 
     if (existing) {
-      return { 
-        error: `A participant with email ${email} already exists in this event (${existing.name})` 
+      return {
+        error: `A participant with email ${email} already exists in this event (${existing.name})`,
       };
     }
   }
@@ -460,15 +477,24 @@ export async function addParticipant(formData: FormData) {
     console.error("Error adding participant:", error);
     // Check if it's a duplicate constraint violation
     if (error.code === "23505") {
-      return { error: "A participant with this email already exists in this event" };
+      return {
+        error: "A participant with this email already exists in this event",
+      };
     }
     return { error: "Failed to add participant" };
   }
 
-  await logEventAction(supabase, eventId, "participant_added", user.id, participant.id, {
-    name,
-    email,
-  });
+  await logEventAction(
+    supabase,
+    eventId,
+    "participant_added",
+    user.id,
+    participant.id,
+    {
+      name,
+      email,
+    },
+  );
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/event/${eventId}`);
@@ -480,7 +506,7 @@ export async function addParticipant(formData: FormData) {
 export async function updateParticipant(
   participantId: string,
   eventId: string,
-  formData: FormData
+  formData: FormData,
 ) {
   const supabase = await createClient();
   const {
@@ -503,7 +529,10 @@ export async function updateParticipant(
   }
 
   if (event.status === "closed") {
-    return { error: "Cannot update participants in closed events. Please reopen the event first." };
+    return {
+      error:
+        "Cannot update participants in closed events. Please reopen the event first.",
+    };
   }
 
   const name = formData.get("name") as string;
@@ -524,7 +553,9 @@ export async function updateParticipant(
       .single();
 
     if (existing) {
-      return { error: "A participant with this email already exists in this event" };
+      return {
+        error: "A participant with this email already exists in this event",
+      };
     }
   }
 
@@ -540,15 +571,24 @@ export async function updateParticipant(
   if (error) {
     console.error("Error updating participant:", error);
     if (error.code === "23505") {
-      return { error: "A participant with this email already exists in this event" };
+      return {
+        error: "A participant with this email already exists in this event",
+      };
     }
     return { error: "Failed to update participant" };
   }
 
-  await logEventAction(supabase, eventId, "participant_updated", user.id, participantId, {
-    name,
-    email,
-  });
+  await logEventAction(
+    supabase,
+    eventId,
+    "participant_updated",
+    user.id,
+    participantId,
+    {
+      name,
+      email,
+    },
+  );
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/event/${eventId}`);
@@ -558,7 +598,7 @@ export async function updateParticipant(
 
 export async function deleteParticipant(
   participantId: string,
-  eventId: string
+  eventId: string,
 ) {
   const supabase = await createClient();
   const {
@@ -581,7 +621,10 @@ export async function deleteParticipant(
   }
 
   if (event.status === "closed") {
-    return { error: "Cannot remove participants from closed events. Please reopen the event first." };
+    return {
+      error:
+        "Cannot remove participants from closed events. Please reopen the event first.",
+    };
   }
 
   // Check if participant has any expenses (as payer or in splits)
@@ -603,7 +646,9 @@ export async function deleteParticipant(
     .limit(1);
 
   if (splits && splits.length > 0) {
-    return { error: "Cannot remove participant who is included in expense splits" };
+    return {
+      error: "Cannot remove participant who is included in expense splits",
+    };
   }
 
   const { error } = await supabase
@@ -616,7 +661,13 @@ export async function deleteParticipant(
     return { error: "Failed to remove participant" };
   }
 
-  await logEventAction(supabase, eventId, "participant_removed", user.id, participantId);
+  await logEventAction(
+    supabase,
+    eventId,
+    "participant_removed",
+    user.id,
+    participantId,
+  );
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/event/${eventId}`);
@@ -627,7 +678,7 @@ export async function deleteParticipant(
 export async function updatePaymentStatus(
   participantId: string,
   eventId: string,
-  status: "pending" | "paid"
+  status: "pending" | "paid",
 ) {
   const supabase = await createClient();
   const {
@@ -730,13 +781,16 @@ export async function closeEvent(eventId: string) {
   const { data: expenseSplits } = await supabase
     .from("expense_splits")
     .select("*")
-    .in("expense_id", event.expenses.map((e: any) => e.id));
+    .in(
+      "expense_id",
+      event.expenses.map((e: any) => e.id),
+    );
 
   // Calculate settlements with custom splits support
   const settlements = calculateSettlements(
     event.participants,
     event.expenses,
-    expenseSplits || []
+    expenseSplits || [],
   );
 
   // Delete existing settlements if any (in case of reopening)
@@ -754,7 +808,7 @@ export async function closeEvent(eventId: string) {
           from_name: s.fromName,
           to_name: s.toName,
           amount: s.amount,
-        }))
+        })),
       );
 
     if (settlementsError) {
@@ -795,7 +849,7 @@ export async function closeEvent(eventId: string) {
         event.currency || "USD",
         relevantSettlements,
         event.email_note,
-        event.slug
+        event.slug,
       );
     }
   }
@@ -888,7 +942,12 @@ export async function deleteEvent(eventId: string) {
 }
 
 // V2: Expense category management
-export async function createExpenseCategory(eventId: string, name: string, color?: string, icon?: string) {
+export async function createExpenseCategory(
+  eventId: string,
+  name: string,
+  color?: string,
+  icon?: string,
+) {
   const supabase = await createClient();
   const {
     data: { user },

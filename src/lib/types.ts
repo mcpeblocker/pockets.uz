@@ -15,7 +15,7 @@ export interface Event {
   title: string;
   description: string | null;
   owner_id: string | null;
-  status: 'open' | 'closed';
+  status: "open" | "closed";
   email_note: string | null;
   currency: string;
   created_at: string;
@@ -28,7 +28,7 @@ export interface Participant {
   user_id: string | null;
   name: string;
   email: string | null;
-  payment_status: 'pending' | 'paid';
+  payment_status: "pending" | "paid";
   participant_token: string | null; // V2: Better identification
   created_at: string;
   updated_at: string;
@@ -90,7 +90,7 @@ export interface Settlement {
 export interface SettlementTransaction {
   id: string;
   settlement_id: string;
-  status: 'pending' | 'paid' | 'cancelled';
+  status: "pending" | "paid" | "cancelled";
   paid_at: string | null;
   payment_method: string | null;
   payment_reference: string | null;
@@ -128,7 +128,7 @@ export interface ExpenseFormData {
   paidByParticipantId: string;
   expenseDate?: string;
   categoryId?: string | null;
-  splitType: 'equal' | 'custom';
+  splitType: "equal" | "custom";
   splits?: Array<{
     participantId: string;
     amount?: number;
