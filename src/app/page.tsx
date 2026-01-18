@@ -2,8 +2,11 @@ import Header from '@/components/Header';
 import SupportForm from '@/components/SupportForm';
 import HelpButton from '@/components/HelpButton';
 import Link from 'next/link';
+import { getUser } from '@/app/actions/auth';
 
-export default function Home() {
+export default async function Home() {
+  const user = await getUser();
+
   return (
     <>
       <Header />
@@ -17,12 +20,21 @@ export default function Home() {
               Make it extremely easy for willing people to share expenses transparently and settle them.
             </p>
             <div className="flex gap-4 justify-center">
-              <Link
-                href="/login"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg"
-              >
-                Create Event
-              </Link>
+              {user ? (
+                <Link
+                  href="/dashboard?create=true"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg"
+                >
+                  Create Event
+                </Link>
+              ) : (
+                <Link
+                  href="/login"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg"
+                >
+                  Create Event
+                </Link>
+              )}
               <Link
                 href="/faq"
                 className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 font-medium py-3 px-8 rounded-lg"

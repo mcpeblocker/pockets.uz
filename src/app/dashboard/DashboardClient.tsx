@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { Event } from '@/lib/types';
 import { createEvent } from '@/app/actions/dashboard';
@@ -11,12 +11,20 @@ import Link from 'next/link';
 interface DashboardClientProps {
   user: User;
   events: Event[];
+  initialShowCreate?: boolean;
 }
 
-export default function DashboardClient({ user, events }: DashboardClientProps) {
-  const [showCreateForm, setShowCreateForm] = useState(false);
+export default function DashboardClient({ user, events, initialShowCreate = false }: DashboardClientProps) {
+  const [showCreateForm, setShowCreateForm] = useState(initialShowCreate);
   const [createStatus, setCreateStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [createMessage, setCreateMessage] = useState('');
+
+  // Remove query param from URL when component mounts with create=true
+  useEffect(() => {
+    if (initialShowCreate) {
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, [initialShowCreate]);
 
   async function handleCreateSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

@@ -188,16 +188,42 @@ export default function EventManagementClient({
                     {event.description}
                   </p>
                 )}
-                <p className="text-sm text-gray-500 mt-2">
-                  Public URL:{" "}
-                  <Link
-                    href={`/event/${event.slug}`}
-                    className="text-blue-600 hover:underline"
-                    target="_blank"
-                  >
-                    /event/{event.slug}
-                  </Link>
-                </p>
+                <div className="text-sm text-gray-500 mt-2">
+                  <span>Public URL: </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Link
+                      href={`/event/${event.slug}`}
+                      className="text-blue-600 hover:underline"
+                      target="_blank"
+                    >
+                      /event/{event.slug}
+                    </Link>
+                    <button
+                      onClick={async (e) => {
+                        const fullUrl = `${window.location.origin}/event/${event.slug}`;
+                        try {
+                          await navigator.clipboard.writeText(fullUrl);
+                          // Show feedback
+                          const button = e.currentTarget;
+                          const originalText = button.textContent || 'Copy';
+                          button.textContent = '✓ Copied!';
+                          button.className = 'text-xs text-green-600 hover:text-green-700 font-medium';
+                          setTimeout(() => {
+                            button.textContent = originalText;
+                            button.className = 'text-xs text-gray-500 hover:text-gray-700 underline';
+                          }, 2000);
+                        } catch (err) {
+                          console.error('Failed to copy:', err);
+                          alert('Failed to copy URL. Please copy manually: ' + fullUrl);
+                        }
+                      }}
+                      className="text-xs text-gray-500 hover:text-gray-700 underline"
+                      title="Copy event URL"
+                    >
+                      Copy URL
+                    </button>
+                  </div>
+                </div>
               </div>
               <span
                 className={`px-3 py-1 rounded-full text-sm font-medium ${
