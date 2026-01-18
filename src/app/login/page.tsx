@@ -5,6 +5,8 @@ import { signInWithEmail } from '@/app/actions/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+const REDIRECT_DELAY_MS = 1500;
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,7 +33,7 @@ export default function LoginPage() {
       // Redirect to dashboard after successful login
       setTimeout(() => {
         router.push('/dashboard');
-      }, 500);
+      }, REDIRECT_DELAY_MS);
     }
   }
 

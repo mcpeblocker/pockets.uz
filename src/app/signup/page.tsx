@@ -5,6 +5,8 @@ import { signUp } from '@/app/actions/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+const REDIRECT_DELAY_MS = 1500;
+
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,7 +48,7 @@ export default function SignUpPage() {
       // Redirect to dashboard after successful signup
       setTimeout(() => {
         router.push('/dashboard');
-      }, 1500);
+      }, REDIRECT_DELAY_MS);
     }
   }
 
