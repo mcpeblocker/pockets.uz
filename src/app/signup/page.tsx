@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithEmail } from '@/app/actions/auth';
+import { signUp } from '@/app/actions/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const router = useRouter();
@@ -16,31 +17,45 @@ export default function LoginPage() {
     e.preventDefault();
     setStatus('loading');
     
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      setStatus('error');
+      setMessage('Passwords do not match');
+      return;
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      setStatus('error');
+      setMessage('Password must be at least 6 characters long');
+      return;
+    }
+    
     const formData = new FormData();
     formData.append('email', email);
     formData.append('password', password);
     
-    const result = await signInWithEmail(formData);
+    const result = await signUp(formData);
     
     if (result.error) {
       setStatus('error');
       setMessage(result.error);
     } else {
       setStatus('success');
-      setMessage('Successfully signed in!');
-      // Redirect to dashboard after successful login
+      setMessage('Account created successfully! Redirecting to dashboard...');
+      // Redirect to dashboard after successful signup
       setTimeout(() => {
         router.push('/dashboard');
-      }, 500);
+      }, 1500);
     }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-        <h1 className="text-3xl font-bold mb-2 text-center">Sign In</h1>
+        <h1 className="text-3xl font-bold mb-2 text-center">Sign Up</h1>
         <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
-          Optional - only needed to create or manage events
+          Create an account to manage events
         </p>
 
         {status === 'success' ? (
@@ -74,7 +89,22 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="Enter your password"
+                placeholder="At least 6 characters"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                placeholder="Re-enter your password"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
               />
             </div>
@@ -90,15 +120,15 @@ export default function LoginPage() {
               disabled={status === 'loading'}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
             >
-              {status === 'loading' ? 'Signing in...' : 'Sign In'}
+              {status === 'loading' ? 'Creating account...' : 'Sign Up'}
             </button>
           </form>
         )}
 
         <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-          <p>Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-blue-600 hover:underline">
-              Sign Up
+          <p>Already have an account?{' '}
+            <Link href="/login" className="text-blue-600 hover:underline">
+              Sign In
             </Link>
           </p>
           <Link href="/" className="text-blue-600 hover:underline mt-4 inline-block">

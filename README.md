@@ -22,7 +22,7 @@ Pockets is a modern web application that simplifies group expense management. No
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4
 - **Database**: Supabase (PostgreSQL with Row Level Security)
-- **Authentication**: Supabase Auth (Magic Links)
+- **Authentication**: Supabase Auth (Email & Password)
 - **Email**: Nodemailer (Gmail SMTP)
 - **Notifications**: Telegram Bot API (optional, for support)
 
@@ -144,7 +144,7 @@ npm start
 
 ### For Organizers
 
-1. Sign in with your email (magic link, no password)
+1. Sign up with your email and password (or sign in if you already have an account)
 2. Create a new event from your dashboard (select currency, add title and description)
 3. Share the event link with participants
 4. Add expenses as they occur
@@ -160,7 +160,7 @@ npm start
 - Only event owners can modify their events
 - Authentication required only for event creation
 - Secure environment variable handling
-- Email magic link authentication (no passwords)
+- Email and password authentication with secure password hashing
 
 ## 📱 Deployment
 
