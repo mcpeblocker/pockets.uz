@@ -42,6 +42,70 @@ export default function EventManagementClient({
   >("idle");
   const [participantMessage, setParticipantMessage] = useState("");
 
+  // Fallback copy function using temporary textarea
+  function copyToClipboardFallback(text: string, button: HTMLButtonElement, originalText: string) {
+    try {
+      // Create a temporary textarea element
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-999999px';
+      textarea.style.top = '-999999px';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      
+      // Try to copy using execCommand
+      let successful = false;
+      try {
+        successful = document.execCommand('copy');
+      } catch (execErr) {
+        console.error('execCommand error:', execErr);
+      }
+      
+      document.body.removeChild(textarea);
+      
+      if (successful) {
+        // Success feedback
+        button.textContent = '✓ Copied!';
+        button.className = 'text-xs text-green-600 hover:text-green-700 font-medium';
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.className = 'text-xs text-gray-500 hover:text-gray-700 underline';
+        }, 2000);
+      } else {
+        // If all methods fail, show the URL in a way that's easy to copy
+        button.textContent = 'Select URL';
+        button.className = 'text-xs text-blue-600 hover:text-blue-700 underline';
+        // Try to select the URL text
+        const urlText = `${window.location.origin}/event/${event.slug}`;
+        // Create a temporary input to show and select
+        const input = document.createElement('input');
+        input.value = urlText;
+        input.style.position = 'fixed';
+        input.style.left = '-9999px';
+        document.body.appendChild(input);
+        input.select();
+        input.setSelectionRange(0, urlText.length);
+        setTimeout(() => {
+          document.body.removeChild(input);
+          button.textContent = originalText;
+          button.className = 'text-xs text-gray-500 hover:text-gray-700 underline';
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      // Just show error state without alert
+      button.textContent = 'Try again';
+      button.className = 'text-xs text-orange-600 hover:text-orange-700 underline';
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.className = 'text-xs text-gray-500 hover:text-gray-700 underline';
+      }, 2000);
+    }
+  }
+
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const sharePerPerson =
     participants.length > 0 ? totalExpenses / participants.length : 0;
@@ -199,25 +263,38 @@ export default function EventManagementClient({
                       /event/{event.slug}
                     </Link>
                     <button
-                      onClick={async (e) => {
-                        const fullUrl = `${window.location.origin}/event/${event.slug}`;
-                        try {
-                          await navigator.clipboard.writeText(fullUrl);
-                          // Show feedback
-                          const button = e.currentTarget;
-                          const originalText = button.textContent || 'Copy';
-                          button.textContent = '✓ Copied!';
-                          button.className = 'text-xs text-green-600 hover:text-green-700 font-medium';
-                          setTimeout(() => {
-                            button.textContent = originalText;
-                            button.className = 'text-xs text-gray-500 hover:text-gray-700 underline';
-                          }, 2000);
-                        } catch (err) {
-                          console.error('Failed to copy:', err);
-                          alert('Failed to copy URL. Please copy manually: ' + fullUrl);
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const fullUrl = typeof window !== 'undefined' 
+                          ? `${window.location.origin}/event/${event.slug}`
+                          : '';
+                        const button = e.currentTarget;
+                        const originalText = button.textContent || 'Copy URL';
+                        
+                        // Try modern clipboard API first
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                          navigator.clipboard.writeText(fullUrl)
+                            .then(() => {
+                              // Success feedback
+                              button.textContent = '✓ Copied!';
+                              button.className = 'text-xs text-green-600 hover:text-green-700 font-medium';
+                              setTimeout(() => {
+                                button.textContent = originalText;
+                                button.className = 'text-xs text-gray-500 hover:text-gray-700 underline';
+                              }, 2000);
+                            })
+                            .catch((err) => {
+                              console.error('Clipboard API failed:', err);
+                              // Fallback to old method
+                              copyToClipboardFallback(fullUrl, button, originalText);
+                            });
+                        } else {
+                          // Use fallback method
+                          copyToClipboardFallback(fullUrl, button, originalText);
                         }
                       }}
-                      className="text-xs text-gray-500 hover:text-gray-700 underline"
+                      className="text-xs text-gray-500 hover:text-gray-700 underline cursor-pointer"
                       title="Copy event URL"
                     >
                       Copy URL
