@@ -794,7 +794,8 @@ export async function closeEvent(eventId: string) {
         event.title,
         event.currency || "USD",
         relevantSettlements,
-        event.email_note
+        event.email_note,
+        event.slug
       );
     }
   }

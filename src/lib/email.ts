@@ -79,7 +79,8 @@ export async function sendSettlementEmail(
     toPay: Array<{ to: string; amount: number }>;
     toReceive: Array<{ from: string; amount: number }>;
   },
-  emailNote?: string
+  emailNote?: string,
+  eventSlug?: string
 ) {
   const hasSettlements = settlementsForParticipant.toPay.length > 0 || settlementsForParticipant.toReceive.length > 0;
 
@@ -111,6 +112,10 @@ export async function sendSettlementEmail(
     `;
   }
 
+  const eventUrl = eventSlug 
+    ? `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/event/${eventSlug}`
+    : null;
+
   return sendEmail({
     to: email,
     subject: `Settlement details for ${eventTitle}`,
@@ -126,6 +131,17 @@ export async function sendSettlementEmail(
         </div>` : ''}
         
         ${settlementsHtml}
+        
+        ${eventUrl ? `
+          <p style="margin: 30px 0;">
+            <a href="${eventUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
+              View Event Details
+            </a>
+          </p>
+          <p style="color: #666; font-size: 14px;">
+            Event URL: <a href="${eventUrl}">${eventUrl}</a>
+          </p>
+        ` : ''}
         
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
         <p style="color: #999; font-size: 12px;">

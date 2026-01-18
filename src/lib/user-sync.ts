@@ -30,7 +30,17 @@ export async function ensureUserExists(userId: string, email?: string) {
 
   if (error) {
     console.error('Error creating user in database:', error);
-    return { error: 'Failed to sync user' };
+    // Check if it's an RLS policy error
+    if (error.code === '42501' || error.message?.includes('policy') || error.message?.includes('permission')) {
+      return { 
+        error: 'Permission denied. Please ensure the database migration for user INSERT policy has been run.',
+        details: error.message 
+      };
+    }
+    return { 
+      error: 'Failed to sync user',
+      details: error.message 
+    };
   }
 
   return { success: true };
