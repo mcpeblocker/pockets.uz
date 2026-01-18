@@ -7,6 +7,8 @@ import { calculateSettlements, validateExpenseSplits } from "@/lib/settlements";
 import { sendSettlementEmail } from "@/lib/email";
 import { ensureUserExists } from "@/lib/user-sync";
 import { ExpenseFormData } from "@/lib/types";
+import { checkEventPermissions, canEditExpense, canDeleteExpense } from "@/lib/permissions";
+import { updateDeviceSession } from "@/lib/device-session";
 
 // Helper to log event history
 async function logEventAction(
@@ -43,10 +45,14 @@ export async function createEvent(formData: FormData) {
     return { error: "Failed to sync user account. Please try again." };
   }
 
+  // Update device session
+  await updateDeviceSession(user.id);
+
   const title = formData.get("title") as string;
   const description = formData.get("description") as string;
   const slug = formData.get("slug") as string;
   const currency = (formData.get("currency") as string) || "USD";
+  const groupId = formData.get("groupId") as string | null; // V3: Optional group
 
   if (!title || !slug) {
     return { error: "Title and slug are required" };
@@ -70,6 +76,33 @@ export async function createEvent(formData: FormData) {
     return { error: "This slug is already taken. Please choose another." };
   }
 
+  // V3: If group_id provided, verify user has access
+  if (groupId) {
+    const { data: group } = await supabase
+      .from("groups")
+      .select("owner_id")
+      .eq("id", groupId)
+      .single();
+
+    if (!group) {
+      return { error: "Group not found" };
+    }
+
+    // Check if user is owner or member
+    if (group.owner_id !== user.id) {
+      const { data: member } = await supabase
+        .from("group_members")
+        .select("id")
+        .eq("group_id", groupId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (!member) {
+        return { error: "You don't have access to this group" };
+      }
+    }
+  }
+
   const { data: event, error } = await supabase
     .from("events")
     .insert({
@@ -77,8 +110,10 @@ export async function createEvent(formData: FormData) {
       description: description || null,
       slug,
       owner_id: user.id,
+      group_id: groupId || null, // V3: Link to group if provided
       status: "open",
       currency,
+      created_by: user.id, // V3: Audit field
     })
     .select()
     .single();
@@ -148,15 +183,24 @@ export async function addExpense(formData: FormData) {
     return { error: "Amount must be greater than 0" };
   }
 
-  // Verify ownership
+  // Update device session
+  await updateDeviceSession(user.id);
+
+  // Check permissions
+  const permissions = await checkEventPermissions(eventId, user.id);
+  if (!permissions.canAddExpenses) {
+    return { error: "You don't have permission to add expenses to this event" };
+  }
+
+  // Get event for status and currency check
   const { data: event } = await supabase
     .from("events")
-    .select("owner_id, status, currency, slug")
+    .select("status, currency, slug")
     .eq("id", eventId)
     .single();
 
-  if (!event || event.owner_id !== user.id) {
-    return { error: "Unauthorized" };
+  if (!event) {
+    return { error: "Event not found" };
   }
 
   if (event.status === "closed") {
@@ -178,7 +222,7 @@ export async function addExpense(formData: FormData) {
     return { error: "Invalid participant" };
   }
 
-  // Create expense
+  // Create expense with audit fields
   const { data: expense, error: expenseError } = await supabase
     .from("expenses")
     .insert({
@@ -189,6 +233,7 @@ export async function addExpense(formData: FormData) {
       expense_date: expenseDate || null,
       category_id: categoryId || null,
       currency: event.currency,
+      created_by: user.id,
     })
     .select()
     .single();
@@ -276,15 +321,24 @@ export async function updateExpense(expenseId: string, formData: FormData) {
     return { error: "Amount must be greater than 0" };
   }
 
-  // Verify ownership
+  // Update device session
+  await updateDeviceSession(user.id);
+
+  // Check permissions
+  const canEdit = await canEditExpense(expenseId, user.id);
+  if (!canEdit) {
+    return { error: "You don't have permission to edit this expense" };
+  }
+
+  // Get event for status check
   const { data: event } = await supabase
     .from("events")
-    .select("owner_id, status, slug")
+    .select("status, slug")
     .eq("id", eventId)
     .single();
 
-  if (!event || event.owner_id !== user.id) {
-    return { error: "Unauthorized" };
+  if (!event) {
+    return { error: "Event not found" };
   }
 
   if (event.status === "closed") {
@@ -294,7 +348,7 @@ export async function updateExpense(expenseId: string, formData: FormData) {
     };
   }
 
-  // Update expense
+  // Update expense (updated_by and version set by trigger)
   const { error: updateError } = await supabase
     .from("expenses")
     .update({
@@ -303,7 +357,6 @@ export async function updateExpense(expenseId: string, formData: FormData) {
       paid_by_participant_id: paidByParticipantId,
       expense_date: expenseDate || null,
       category_id: categoryId || null,
-      updated_at: new Date().toISOString(),
     })
     .eq("id", expenseId);
 
@@ -371,15 +424,24 @@ export async function deleteExpense(expenseId: string, eventId: string) {
     return { error: "Unauthorized" };
   }
 
-  // Verify ownership
+  // Update device session
+  await updateDeviceSession(user.id);
+
+  // Check permissions
+  const canDelete = await canDeleteExpense(expenseId, user.id);
+  if (!canDelete) {
+    return { error: "You don't have permission to delete this expense" };
+  }
+
+  // Get event for status check
   const { data: event } = await supabase
     .from("events")
-    .select("owner_id, status, slug")
+    .select("status, slug")
     .eq("id", eventId)
     .single();
 
-  if (!event || event.owner_id !== user.id) {
-    return { error: "Unauthorized" };
+  if (!event) {
+    return { error: "Event not found" };
   }
 
   if (event.status === "closed") {

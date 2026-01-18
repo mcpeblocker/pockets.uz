@@ -1,4 +1,4 @@
-// Database types - V2 Enhanced
+// Database types - V3 Architecture with Groups, Permissions, and Audit
 
 export interface User {
   id: string;
@@ -9,17 +9,73 @@ export interface User {
   updated_at: string;
 }
 
+// V3: Groups architecture
+export interface Group {
+  id: string;
+  name: string;
+  description: string | null;
+  currency: string;
+  owner_id: string;
+  settings: Record<string, any> | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+  updated_by: string | null;
+  version: number;
+}
+
+export interface GroupMember {
+  id: string;
+  group_id: string;
+  user_id: string;
+  role: 'admin' | 'member';
+  invited_by: string | null;
+  joined_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// V3: Device sessions
+export interface DeviceSession {
+  id: string;
+  user_id: string;
+  device_id: string;
+  device_name: string | null;
+  user_agent: string | null;
+  ip_address: string | null;
+  last_active_at: string;
+  expires_at: string | null;
+  created_at: string;
+}
+
+// V3: Auth providers (for OAuth)
+export interface AuthProvider {
+  id: string;
+  user_id: string;
+  provider: string; // 'google', 'github', 'email', etc.
+  provider_user_id: string;
+  email: string | null;
+  name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Event {
   id: string;
   slug: string;
   title: string;
   description: string | null;
   owner_id: string | null;
-  status: "open" | "closed";
+  group_id: string | null; // V3: Can belong to a group
+  status: 'open' | 'closed';
   email_note: string | null;
   currency: string;
   created_at: string;
   updated_at: string;
+  created_by: string | null; // V3: Audit field
+  updated_by: string | null; // V3: Audit field
+  version: number; // V3: For sync
 }
 
 export interface Participant {
@@ -28,10 +84,12 @@ export interface Participant {
   user_id: string | null;
   name: string;
   email: string | null;
-  payment_status: "pending" | "paid";
-  participant_token: string | null; // V2: Better identification
+  payment_status: 'pending' | 'paid';
+  participant_token: string | null;
   created_at: string;
   updated_at: string;
+  created_by: string | null; // V3: Audit field
+  updated_by: string | null; // V3: Audit field
 }
 
 export interface ExpenseCategory {
@@ -41,6 +99,7 @@ export interface ExpenseCategory {
   color: string | null;
   icon: string | null;
   created_at: string;
+  created_by: string | null; // V3: Audit field
 }
 
 export interface Expense {
@@ -50,18 +109,21 @@ export interface Expense {
   amount: number;
   currency: string;
   paid_by_participant_id: string;
-  expense_date: string | null; // V2: Date when expense occurred
-  category_id: string | null; // V2: Expense category
+  expense_date: string | null;
+  category_id: string | null;
   created_at: string;
   updated_at: string;
+  created_by: string | null; // V3: Audit field
+  updated_by: string | null; // V3: Audit field
+  version: number; // V3: For sync
 }
 
 export interface ExpenseSplit {
   id: string;
   expense_id: string;
   participant_id: string;
-  amount: number | null; // V2: Custom amount
-  percentage: number | null; // V2: Custom percentage
+  amount: number | null;
+  percentage: number | null;
   created_at: string;
 }
 
@@ -85,12 +147,14 @@ export interface Settlement {
   amount: number;
   created_at: string;
   updated_at: string;
+  created_by: string | null; // V3: Audit field
+  updated_by: string | null; // V3: Audit field
 }
 
 export interface SettlementTransaction {
   id: string;
   settlement_id: string;
-  status: "pending" | "paid" | "cancelled";
+  status: 'pending' | 'paid' | 'cancelled';
   paid_at: string | null;
   payment_method: string | null;
   payment_reference: string | null;
@@ -121,6 +185,15 @@ export interface SettlementWithTransaction extends Settlement {
   transaction?: SettlementTransaction | null;
 }
 
+export interface GroupWithMembers extends Group {
+  members?: Array<GroupMember & { user?: User }>;
+  member_count?: number;
+}
+
+export interface EventWithGroup extends Event {
+  group?: Group | null;
+}
+
 // Form types
 export interface ExpenseFormData {
   description: string;
@@ -128,7 +201,7 @@ export interface ExpenseFormData {
   paidByParticipantId: string;
   expenseDate?: string;
   categoryId?: string | null;
-  splitType: "equal" | "custom";
+  splitType: 'equal' | 'custom';
   splits?: Array<{
     participantId: string;
     amount?: number;
@@ -139,4 +212,16 @@ export interface ExpenseFormData {
 export interface ParticipantFormData {
   name: string;
   email?: string | null;
+}
+
+// Permission types
+export type UserRole = 'admin' | 'member' | 'owner' | 'public';
+
+export interface PermissionCheck {
+  canView: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canAddExpenses: boolean;
+  canManageMembers: boolean;
+  role: UserRole;
 }
