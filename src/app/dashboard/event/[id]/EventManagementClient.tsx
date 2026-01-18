@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { Event, Participant, Expense, Settlement } from "@/lib/types";
 import {
   addExpense,
@@ -15,12 +15,14 @@ import {
 import { formatCurrency } from "@/lib/currency";
 import Header from "@/components/Header";
 import Link from "next/link";
+import QRCode from "@/components/QRCode";
 
 interface EventManagementClientProps {
   event: Event;
   participants: Participant[];
   expenses: Array<Expense & { paid_by?: { id: string; name: string } }>;
   settlements: Settlement[];
+  initialShowQR?: boolean;
 }
 
 export default function EventManagementClient({
@@ -28,11 +30,20 @@ export default function EventManagementClient({
   participants,
   expenses,
   settlements,
+  initialShowQR = false,
 }: EventManagementClientProps) {
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [showEmailNote, setShowEmailNote] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(initialShowQR);
   const [emailNote, setEmailNote] = useState(event.email_note || "");
+
+  // Remove query param from URL when component mounts with showQR=true
+  useEffect(() => {
+    if (initialShowQR) {
+      window.history.replaceState({}, '', `/dashboard/event/${event.id}`);
+    }
+  }, [initialShowQR, event.id]);
   const [expenseStatus, setExpenseStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
@@ -299,6 +310,13 @@ export default function EventManagementClient({
                     >
                       Copy URL
                     </button>
+                    <button
+                      onClick={() => setShowQRCode(true)}
+                      className="text-xs text-gray-500 hover:text-gray-700 underline cursor-pointer"
+                      title="Show QR Code"
+                    >
+                      📱 QR Code
+                    </button>
                   </div>
                 </div>
               </div>
@@ -399,6 +417,51 @@ export default function EventManagementClient({
                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* QR Code Modal */}
+          {showQRCode && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full">
+                <h2 className="text-xl font-bold mb-2">Event QR Code</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Scan this QR code to quickly access the event
+                </p>
+                <div className="flex flex-col items-center mb-4">
+                  {typeof window !== 'undefined' && (
+                    <QRCode
+                      value={`${window.location.origin}/event/${event.slug}`}
+                      size={256}
+                      className="mb-4"
+                    />
+                  )}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center break-all">
+                    {typeof window !== 'undefined' ? `${window.location.origin}/event/${event.slug}` : ''}
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      const fullUrl = typeof window !== 'undefined' 
+                        ? `${window.location.origin}/event/${event.slug}`
+                        : '';
+                      if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(fullUrl).catch(() => {});
+                      }
+                    }}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg"
+                  >
+                    Copy URL
+                  </button>
+                  <button
+                    onClick={() => setShowQRCode(false)}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Close
                   </button>
                 </div>
               </div>

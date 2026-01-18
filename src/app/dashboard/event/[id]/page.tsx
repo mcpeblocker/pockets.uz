@@ -4,7 +4,13 @@ import { createClient } from '@/lib/supabase-server';
 import { getEventParticipants, getEventExpenses, getEventSettlements } from '@/app/actions/events';
 import EventManagementClient from './EventManagementClient';
 
-export default async function EventManagementPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EventManagementPage({ 
+  params,
+  searchParams,
+}: { 
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ showQR?: string }>;
+}) {
   const user = await getUser();
 
   if (!user) {
@@ -12,6 +18,8 @@ export default async function EventManagementPage({ params }: { params: Promise<
   }
 
   const { id } = await params;
+  const paramsObj = await searchParams;
+  const showQR = paramsObj?.showQR === 'true';
   const supabase = await createClient();
 
   // Get event and verify ownership
@@ -41,6 +49,7 @@ export default async function EventManagementPage({ params }: { params: Promise<
       participants={participants}
       expenses={expenses}
       settlements={settlements}
+      initialShowQR={showQR}
     />
   );
 }

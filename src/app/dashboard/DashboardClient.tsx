@@ -40,8 +40,13 @@ export default function DashboardClient({ user, events, initialShowCreate = fals
       setCreateStatus('success');
       setCreateMessage('Event created successfully!');
       setShowCreateForm(false);
-      // Refresh page to show new event
-      window.location.reload();
+      // Redirect to event page with QR code shown
+      if (result.event?.id) {
+        window.location.href = `/dashboard/event/${result.event.id}?showQR=true`;
+      } else {
+        // Fallback: refresh page
+        window.location.reload();
+      }
     }
   }
 
