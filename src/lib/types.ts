@@ -215,7 +215,7 @@ export interface ParticipantFormData {
 }
 
 // Permission types
-export type UserRole = 'admin' | 'member' | 'owner' | 'public';
+export type UserRole = 'admin' | 'member' | 'owner' | 'public' | 'participant';
 
 export interface PermissionCheck {
   canView: boolean;
