@@ -1,0 +1,17 @@
+services:
+  dev-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rejection-web
+    env_file:
+      - .env
+    networks:
+      - default
+    restart: unless-stopped
+    ports:
+      - "3003:3000"
+
+networks:
+  default:
+    driver: bridge
