@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase-client';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { signOut } from '@/app/actions/auth';
 
 export default function Header() {
   const [user, setUser] = useState<User | null>(null);
+  const pathname = usePathname();
   const supabase = createClient();
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
 
   useEffect(() => {
     // Get initial user
@@ -51,12 +54,22 @@ export default function Header() {
               </form>
             </>
           ) : (
-            <Link 
-              href="/login" 
-              className="text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors"
-            >
-              Sign In
-            </Link>
+            !isAuthPage && (
+              <>
+                <Link 
+                  href="/login" 
+                  className="text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link 
+                  href="/signup" 
+                  className="text-xs sm:text-sm bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )
           )}
         </nav>
       </div>

@@ -1,14 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithPassword } from '@/app/actions/auth';
+import { signUpWithPassword } from '@/app/actions/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
@@ -20,24 +21,29 @@ export default function LoginPage() {
     const formData = new FormData();
     formData.append('email', email);
     formData.append('password', password);
+    formData.append('name', name);
 
-    const result = await signInWithPassword(formData);
+    const result = await signUpWithPassword(formData);
     if (result.error) {
       setStatus('error');
       setMessage(result.error);
     } else {
       setStatus('success');
-      setMessage('Signing in...');
-      setTimeout(() => router.push('/dashboard'), 500);
+      if (result.message) {
+        setMessage(result.message);
+      } else {
+        setMessage('Account created! Redirecting...');
+        setTimeout(() => router.push('/dashboard'), 1500);
+      }
     }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-        <h1 className="text-3xl font-bold mb-2 text-center">Sign In</h1>
+        <h1 className="text-3xl font-bold mb-2 text-center">Create Account</h1>
         <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
-          Sign in to manage your events and groups
+          Create an account to manage your events and groups
         </p>
 
         {status === 'success' ? (
@@ -46,6 +52,20 @@ export default function LoginPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium mb-2">
+                Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Doe"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+              />
+            </div>
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2">
                 Email Address
@@ -71,9 +91,13 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="Enter your password"
+                minLength={8}
+                placeholder="At least 8 characters"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
               />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Must be at least 8 characters
+              </p>
             </div>
 
             {status === 'error' && (
@@ -87,42 +111,16 @@ export default function LoginPage() {
               disabled={status === 'loading'}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
             >
-              {status === 'loading' ? 'Processing...' : 'Sign In'}
+              {status === 'loading' ? 'Processing...' : 'Create Account'}
             </button>
           </form>
         )}
 
         <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           <p className="mt-2">
-            <button
-              onClick={async () => {
-                if (!email) {
-                  setStatus('error');
-                  setMessage('Please enter your email address first');
-                  return;
-                }
-                setStatus('loading');
-                const formData = new FormData();
-                formData.append('email', email);
-                const { requestPasswordReset } = await import('@/app/actions/auth');
-                const result = await requestPasswordReset(formData);
-                if (result.error) {
-                  setStatus('error');
-                  setMessage(result.error);
-                } else {
-                  setStatus('success');
-                  setMessage('Password reset email sent! Check your inbox.');
-                }
-              }}
-              className="text-blue-600 hover:underline text-sm"
-            >
-              Forgot password?
-            </button>
-          </p>
-          <p className="mt-2">
-            Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-blue-600 hover:underline">
-              Sign up
+            Already have an account?{' '}
+            <Link href="/login" className="text-blue-600 hover:underline">
+              Sign in
             </Link>
           </p>
           <Link href="/" className="text-blue-600 hover:underline mt-4 inline-block">
