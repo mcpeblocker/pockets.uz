@@ -33,7 +33,15 @@ export default async function EventManagementPage({
     notFound();
   }
 
-  if (event.owner_id !== user.id) {
+  // Check if user is owner or participant
+  const { data: participant } = await supabase
+    .from('participants')
+    .select('id')
+    .eq('event_id', id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (event.owner_id !== user.id && !participant) {
     redirect('/dashboard');
   }
 
@@ -50,6 +58,7 @@ export default async function EventManagementPage({
       expenses={expenses}
       settlements={settlements}
       initialShowQR={showQR}
+      currentUserId={user.id}
     />
   );
 }

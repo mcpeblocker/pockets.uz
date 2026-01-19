@@ -123,7 +123,27 @@ export async function createEvent(formData: FormData) {
     return { error: "Failed to create event" };
   }
 
-  await logEventAction(supabase, event.id, "event_created", user.id, null, {
+  // Auto-add owner as participant
+  const { data: ownerParticipant, error: participantError } = await supabase
+    .from("participants")
+    .insert({
+      event_id: event.id,
+      user_id: user.id,
+      name: user.user_metadata?.name || user.email?.split("@")[0] || "Event Owner",
+      email: user.email || null,
+      payment_status: "pending",
+      created_by: user.id,
+    })
+    .select()
+    .single();
+
+  if (participantError) {
+    console.error("Error adding owner as participant:", participantError);
+    // Don't fail event creation if participant creation fails
+    // The owner can still manage the event
+  }
+
+  await logEventAction(supabase, event.id, "event_created", user.id, ownerParticipant?.id || null, {
     title,
     slug,
   });
@@ -174,6 +194,18 @@ export async function addExpense(formData: FormData) {
   const expenseDate = formData.get("expenseDate") as string | null;
   const categoryId = formData.get("categoryId") as string | null;
   const splitType = (formData.get("splitType") as string) || "equal";
+  const expenseCurrency = (formData.get("currency") as string) || null;
+  
+  // Get selected participants for splitting
+  const splitParticipantsJson = formData.get("splitParticipants") as string;
+  let splitParticipants: string[] = [];
+  if (splitParticipantsJson) {
+    try {
+      splitParticipants = JSON.parse(splitParticipantsJson);
+    } catch (e) {
+      console.error("Error parsing splitParticipants:", e);
+    }
+  }
 
   if (!eventId || !description || !amount || !paidByParticipantId) {
     return { error: "All required fields are missing" };
@@ -202,6 +234,15 @@ export async function addExpense(formData: FormData) {
   if (!event) {
     return { error: "Event not found" };
   }
+
+  // Check if this is the first expense or get existing expenses to calculate dominant currency
+  const { data: existingExpenses } = await supabase
+    .from("expenses")
+    .select("currency")
+    .eq("event_id", eventId);
+
+  const isFirstExpense = !existingExpenses || existingExpenses.length === 0;
+  const finalCurrency = expenseCurrency || event.currency;
 
   if (event.status === "closed") {
     return {
@@ -232,7 +273,7 @@ export async function addExpense(formData: FormData) {
       paid_by_participant_id: paidByParticipantId,
       expense_date: expenseDate || null,
       category_id: categoryId || null,
-      currency: event.currency,
+      currency: expenseCurrency || event.currency,
       created_by: user.id,
     })
     .select()
@@ -243,8 +284,28 @@ export async function addExpense(formData: FormData) {
     return { error: "Failed to add expense" };
   }
 
-  // Handle custom splits
-  if (splitType === "custom") {
+  // Handle expense splits - use selected participants or custom splits
+  if (splitParticipants.length > 0) {
+    // Equal split among selected participants
+    const splitAmount = amount / splitParticipants.length;
+    const splitRecords = splitParticipants.map((participantId: string) => ({
+      expense_id: expense.id,
+      participant_id: participantId,
+      amount: splitAmount,
+      percentage: null,
+    }));
+
+    const { error: splitsError } = await supabase
+      .from("expense_splits")
+      .insert(splitRecords);
+
+    if (splitsError) {
+      console.error("Error adding expense splits:", splitsError);
+      await supabase.from("expenses").delete().eq("id", expense.id);
+      return { error: "Failed to add expense splits" };
+    }
+  } else if (splitType === "custom") {
+    // Custom splits (existing logic)
     const splitsJson = formData.get("splits") as string;
     if (splitsJson) {
       try {
@@ -281,6 +342,48 @@ export async function addExpense(formData: FormData) {
       }
     }
   }
+
+  // Update event currency if needed
+  if (isFirstExpense && finalCurrency && finalCurrency !== event.currency) {
+    // First expense: set event currency to match expense currency
+    await supabase
+      .from("events")
+      .update({ currency: finalCurrency })
+      .eq("id", eventId);
+  } else if (!isFirstExpense && existingExpenses) {
+    // Calculate dominant currency (most used currency)
+    const currencyCounts: Record<string, number> = {};
+    existingExpenses.forEach((e: any) => {
+      const curr = e.currency || event.currency;
+      currencyCounts[curr] = (currencyCounts[curr] || 0) + 1;
+    });
+    
+    // Add the new expense currency
+    currencyCounts[finalCurrency] = (currencyCounts[finalCurrency] || 0) + 1;
+    
+    // Find the currency with the highest count
+    let dominantCurrency = event.currency;
+    let maxCount = 0;
+    Object.entries(currencyCounts).forEach(([curr, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        dominantCurrency = curr;
+      }
+    });
+    
+    // Update event currency if dominant currency is different
+    if (dominantCurrency !== event.currency) {
+      await supabase
+        .from("events")
+        .update({ currency: dominantCurrency })
+        .eq("id", eventId);
+    }
+  }
+
+  // Note: Photo uploads are handled client-side via API route
+  // The photoCount and photo files are passed but will be uploaded separately
+  // This is because File objects in FormData don't work well in server actions
+  // The client should upload photos after expense is created
 
   await logEventAction(supabase, eventId, "expense_added", user.id, null, {
     expense_id: expense.id,
@@ -751,15 +854,35 @@ export async function updatePaymentStatus(
     return { error: "Unauthorized" };
   }
 
-  // Verify ownership and get event slug
+  // Get event and participant info
   const { data: event } = await supabase
     .from("events")
     .select("owner_id, slug")
     .eq("id", eventId)
     .single();
 
-  if (!event || event.owner_id !== user.id) {
-    return { error: "Unauthorized" };
+  if (!event) {
+    return { error: "Event not found" };
+  }
+
+  // Get participant to check if user is the participant
+  const { data: participant } = await supabase
+    .from("participants")
+    .select("user_id")
+    .eq("id", participantId)
+    .eq("event_id", eventId)
+    .single();
+
+  if (!participant) {
+    return { error: "Participant not found" };
+  }
+
+  // Allow if user is event owner OR if user is the participant themselves
+  const isOwner = event.owner_id === user.id;
+  const isParticipant = participant.user_id === user.id;
+
+  if (!isOwner && !isParticipant) {
+    return { error: "Unauthorized. Only the event owner or the participant themselves can update payment status." };
   }
 
   const { error } = await supabase

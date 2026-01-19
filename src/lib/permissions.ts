@@ -52,6 +52,25 @@ export async function checkEventPermissions(
     };
   }
 
+  // Check if user is a participant (allow them to add expenses)
+  const { data: participant } = await supabase
+    .from('participants')
+    .select('id, user_id')
+    .eq('event_id', eventId)
+    .eq('user_id', userId)
+    .single();
+
+  if (participant) {
+    return {
+      canView: true,
+      canEdit: false,
+      canDelete: false,
+      canAddExpenses: true, // Participants can add expenses
+      canManageMembers: false,
+      role: 'participant',
+    };
+  }
+
   // Check if event belongs to a group
   if (event.group_id) {
     const { data: member } = await supabase

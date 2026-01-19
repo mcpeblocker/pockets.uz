@@ -12,17 +12,19 @@ import {
   addParticipant,
   deleteParticipant,
 } from "@/app/actions/dashboard";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, CURRENCIES } from "@/lib/currency";
 import Header from "@/components/Header";
 import Link from "next/link";
 import QRCode from "@/components/QRCode";
+import { calculateBalances } from "@/lib/settlements";
 
 interface EventManagementClientProps {
   event: Event;
   participants: Participant[];
-  expenses: Array<Expense & { paid_by?: { id: string; name: string } }>;
+  expenses: Array<Expense & { paid_by?: { id: string; name: string }; splits?: any[]; receipts?: any[] }>;
   settlements: Settlement[];
   initialShowQR?: boolean;
+  currentUserId: string;
 }
 
 export default function EventManagementClient({
@@ -31,7 +33,9 @@ export default function EventManagementClient({
   expenses,
   settlements,
   initialShowQR = false,
+  currentUserId,
 }: EventManagementClientProps) {
+  const [activeTab, setActiveTab] = useState<"expenses" | "balances" | "photos">("expenses");
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [showEmailNote, setShowEmailNote] = useState(false);
@@ -48,6 +52,12 @@ export default function EventManagementClient({
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [expenseMessage, setExpenseMessage] = useState("");
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const [expensePhotos, setExpensePhotos] = useState<File[]>([]);
+  const [splitEnabled, setSplitEnabled] = useState(true);
+  const [splitType, setSplitType] = useState<"equal" | "custom">("equal");
+  const [participantAmounts, setParticipantAmounts] = useState<Record<string, number>>({});
+  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [participantStatus, setParticipantStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
@@ -121,20 +131,128 @@ export default function EventManagementClient({
   const sharePerPerson =
     participants.length > 0 ? totalExpenses / participants.length : 0;
 
+  // Calculate balances for current user
+  const currentUserParticipant = participants.find(p => p.user_id === currentUserId);
+  const myExpenses = currentUserParticipant 
+    ? expenses.filter(e => {
+        // Check if user paid for it or is in the splits
+        if (e.paid_by?.id === currentUserParticipant.id) return true;
+        return e.splits?.some((s: any) => s.participant_id === currentUserParticipant.id);
+      }).reduce((sum, e) => {
+        // Calculate user's share of each expense
+        if (e.paid_by?.id === currentUserParticipant.id) {
+          // User paid, but may have split it
+          const userSplit = e.splits?.find((s: any) => s.participant_id === currentUserParticipant.id);
+          if (userSplit && userSplit.amount) {
+            return sum + (e.amount - userSplit.amount); // What they paid minus their share
+          }
+          return sum + e.amount;
+        }
+        // User is in splits
+        const userSplit = e.splits?.find((s: any) => s.participant_id === currentUserParticipant.id);
+        return sum + (userSplit?.amount || 0);
+      }, 0)
+    : 0;
+
+  // Get all expense splits for balance calculation
+  const allSplits = expenses.flatMap(e => e.splits || []);
+  const balances = calculateBalances(participants, expenses, allSplits);
+  const currentUserBalance = balances.find(b => {
+    const p = participants.find(p => p.id === b.participantId);
+    return p?.user_id === currentUserId;
+  });
+  const allBalanced = balances.every(b => Math.abs(b.balance) < 0.01);
+
   async function handleAddExpense(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setExpenseStatus("loading");
 
     const formData = new FormData(e.currentTarget);
+    
+    // Add date (currency will use event currency automatically)
+    formData.append("expenseDate", expenseDate);
+    
+    // Handle splitting
+    if (splitEnabled) {
+      if (selectedParticipants.length === 0) {
+        setExpenseStatus("error");
+        setExpenseMessage("Please select at least one participant to split the expense among.");
+        return;
+      }
+      
+      if (splitType === "equal") {
+        // Equal split - just pass participants
+        formData.append("splitParticipants", JSON.stringify(selectedParticipants));
+        formData.append("splitType", "equal");
+      } else {
+        // Custom split - pass individual amounts
+        const amount = parseFloat(formData.get("amount") as string);
+        const customSplits = selectedParticipants.map(pid => ({
+          participantId: pid,
+          amount: participantAmounts[pid] || 0
+        }));
+        
+        // Validate custom splits sum to total
+        const totalSplit = customSplits.reduce((sum, s) => sum + s.amount, 0);
+        if (Math.abs(totalSplit - amount) > 0.01) {
+          setExpenseStatus("error");
+          setExpenseMessage(`Split amounts (${totalSplit.toFixed(2)}) must equal expense amount (${amount.toFixed(2)})`);
+          return;
+        }
+        
+        formData.append("splits", JSON.stringify(customSplits));
+        formData.append("splitType", "custom");
+      }
+    } else {
+      formData.append("splitType", "none");
+    }
+    
+    // Add photos
+    expensePhotos.forEach((photo, index) => {
+      formData.append(`photo_${index}`, photo);
+    });
+    formData.append("photoCount", expensePhotos.length.toString());
+    
     const result = await addExpense(formData);
 
     if (result.error) {
       setExpenseStatus("error");
       setExpenseMessage(result.error);
     } else {
+      // Upload photos if expense was created successfully
+      if (result.expense && expensePhotos.length > 0) {
+        try {
+          const uploadPromises = expensePhotos.map(async (photo) => {
+            const uploadFormData = new FormData();
+            uploadFormData.append('file', photo);
+            uploadFormData.append('expenseId', result.expense.id);
+            
+            const uploadResponse = await fetch('/api/upload-receipt', {
+              method: 'POST',
+              body: uploadFormData,
+            });
+            
+            if (!uploadResponse.ok) {
+              console.error(`Failed to upload photo: ${photo.name}`);
+            }
+          });
+          
+          await Promise.all(uploadPromises);
+        } catch (uploadError) {
+          console.error('Error uploading photos:', uploadError);
+          // Don't fail the expense creation if photo upload fails
+        }
+      }
+      
       setExpenseStatus("success");
       setExpenseMessage("Expense added successfully!");
       setShowAddExpense(false);
+      setSelectedParticipants([]);
+      setExpensePhotos([]);
+      setParticipantAmounts({});
+      setSplitEnabled(true);
+      setSplitType("equal");
+      setExpenseDate(new Date().toISOString().split('T')[0]);
       window.location.reload();
     }
   }
@@ -492,98 +610,272 @@ export default function EventManagementClient({
             </div>
           )}
 
-          {/* Add Expense Form */}
+          {/* Add Expense Form Modal */}
           {showAddExpense && event.status === "open" && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-              <h2 className="text-xl font-bold mb-4">Add Expense</h2>
-              <form onSubmit={handleAddExpense} className="space-y-4">
-                <input type="hidden" name="eventId" value={event.id} />
-
-                <div>
-                  <label
-                    htmlFor="description"
-                    className="block text-sm font-medium mb-2"
-                  >
-                    Description *
-                  </label>
-                  <input
-                    id="description"
-                    name="description"
-                    type="text"
-                    required
-                    placeholder="Dinner at restaurant"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="amount"
-                    className="block text-sm font-medium mb-2"
-                  >
-                    Amount *
-                  </label>
-                  <input
-                    id="amount"
-                    name="amount"
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    placeholder="100.00"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="paidByParticipantId"
-                    className="block text-sm font-medium mb-2"
-                  >
-                    Paid By *
-                  </label>
-                  <select
-                    id="paidByParticipantId"
-                    name="paidByParticipantId"
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                  >
-                    <option value="">Select participant</option>
-                    {participants.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {expenseStatus === "error" && (
-                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-800 dark:text-red-200">
-                    {expenseMessage}
-                  </div>
-                )}
-
-                <div className="flex gap-3">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-2xl w-full my-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold">Add Expense</h2>
                   <button
-                    type="submit"
-                    disabled={expenseStatus === "loading"}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-lg"
-                  >
-                    {expenseStatus === "loading" ? "Adding..." : "Add Expense"}
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => {
                       setShowAddExpense(false);
                       setExpenseStatus("idle");
                       setExpenseMessage("");
+                      setSelectedParticipants([]);
+                      setExpensePhotos([]);
+                      setParticipantAmounts({});
+                      setSplitEnabled(true);
+                      setSplitType("equal");
                     }}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
-                    Cancel
+                    ✕
                   </button>
                 </div>
-              </form>
+                <form onSubmit={handleAddExpense} className="space-y-6">
+                  <input type="hidden" name="eventId" value={event.id} />
+
+                  {/* Title */}
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium mb-2">
+                      Title *
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        id="description"
+                        name="description"
+                        type="text"
+                        required
+                        placeholder="E.g. Drinks"
+                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                      />
+                      <button
+                        type="button"
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        title="Category"
+                      >
+                        🏷️
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('expensePhotos')?.click()}
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        title="Add Photo"
+                      >
+                        📷
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Amount */}
+                  <div>
+                    <label htmlFor="amount" className="block text-sm font-medium mb-2">
+                      Amount *
+                    </label>
+                    <input
+                      id="amount"
+                      name="amount"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      placeholder="0.00"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-lg"
+                    />
+                  </div>
+
+                  {/* Paid By & When */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="paidByParticipantId" className="block text-sm font-medium mb-2">
+                        Paid By *
+                      </label>
+                      <select
+                        id="paidByParticipantId"
+                        name="paidByParticipantId"
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                      >
+                        <option value="">Select participant</option>
+                        {participants.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} {p.user_id === currentUserId ? "(me)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="expenseDate" className="block text-sm font-medium mb-2">
+                        When *
+                      </label>
+                      <input
+                        id="expenseDate"
+                        name="expenseDate"
+                        type="date"
+                        value={expenseDate}
+                        onChange={(e) => setExpenseDate(e.target.value)}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Split Expense */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <input
+                        type="checkbox"
+                        id="splitEnabled"
+                        checked={splitEnabled}
+                        onChange={(e) => {
+                          setSplitEnabled(e.target.checked);
+                          if (!e.target.checked) {
+                            setSelectedParticipants([]);
+                            setParticipantAmounts({});
+                          }
+                        }}
+                        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <label htmlFor="splitEnabled" className="text-sm font-medium">
+                        Split
+                      </label>
+                      {splitEnabled && (
+                        <div className="flex-1 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSplitType("equal")}
+                            className={`px-3 py-1 rounded text-sm ${
+                              splitType === "equal"
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                            }`}
+                          >
+                            Equally
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSplitType("custom")}
+                            className="text-gray-500 hover:text-gray-700"
+                            title="Custom Split"
+                          >
+                            ⇄
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {splitEnabled && (
+                      <div className="space-y-2 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        {participants.map((p) => {
+                          const isSelected = selectedParticipants.includes(p.id);
+                          const amount = participantAmounts[p.id] || 0;
+                          const totalAmount = parseFloat((document.getElementById('amount') as HTMLInputElement)?.value || '0');
+                          const equalAmount = selectedParticipants.length > 0 && splitType === "equal"
+                            ? totalAmount / selectedParticipants.length
+                            : 0;
+
+                          return (
+                            <div key={p.id} className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedParticipants([...selectedParticipants, p.id]);
+                                    if (splitType === "equal") {
+                                      // Will be calculated on submit
+                                    } else {
+                                      setParticipantAmounts({...participantAmounts, [p.id]: 0});
+                                    }
+                                  } else {
+                                    setSelectedParticipants(selectedParticipants.filter(id => id !== p.id));
+                                    const newAmounts = {...participantAmounts};
+                                    delete newAmounts[p.id];
+                                    setParticipantAmounts(newAmounts);
+                                  }
+                                }}
+                                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <label className="flex-1 text-sm">
+                                {p.name} {p.user_id === currentUserId ? "(me)" : ""}
+                              </label>
+                              {isSelected && (
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={splitType === "equal" ? equalAmount.toFixed(2) : amount}
+                                  onChange={(e) => {
+                                    if (splitType === "custom") {
+                                      setParticipantAmounts({
+                                        ...participantAmounts,
+                                        [p.id]: parseFloat(e.target.value) || 0
+                                      });
+                                    }
+                                  }}
+                                  disabled={splitType === "equal"}
+                                  className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm dark:bg-gray-700"
+                                  placeholder="0.00"
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Hidden file input */}
+                  <input
+                    id="expensePhotos"
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setExpensePhotos(files);
+                    }}
+                    className="hidden"
+                  />
+                  {expensePhotos.length > 0 && (
+                    <div className="text-sm text-blue-600 dark:text-blue-400">
+                      {expensePhotos.length} file(s) selected
+                    </div>
+                  )}
+
+                  {expenseStatus === "error" && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-800 dark:text-red-200">
+                      {expenseMessage}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="submit"
+                      disabled={expenseStatus === "loading"}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg"
+                    >
+                      {expenseStatus === "loading" ? "Adding..." : "Add"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddExpense(false);
+                        setExpenseStatus("idle");
+                        setExpenseMessage("");
+                        setSelectedParticipants([]);
+                        setExpensePhotos([]);
+                        setParticipantAmounts({});
+                        setSplitEnabled(true);
+                        setSplitType("equal");
+                      }}
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
@@ -673,43 +965,205 @@ export default function EventManagementClient({
             </div>
           )}
 
-          {/* Expenses */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-            <h2 className="text-xl font-bold mb-4">Expenses</h2>
-            {expenses.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">
-                No expenses yet.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {expenses.map((expense) => (
-                  <div
-                    key={expense.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">{expense.description}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Paid by {expense.paid_by?.name || "Unknown"}
-                      </p>
+          {/* Tabs */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg mb-6">
+            <div className="flex border-b border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setActiveTab("expenses")}
+                className={`flex-1 px-6 py-3 text-sm font-medium ${
+                  activeTab === "expenses"
+                    ? "border-b-2 border-blue-600 text-blue-600 dark:text-blue-400"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                }`}
+              >
+                Expenses
+              </button>
+              <button
+                onClick={() => setActiveTab("balances")}
+                className={`flex-1 px-6 py-3 text-sm font-medium ${
+                  activeTab === "balances"
+                    ? "border-b-2 border-blue-600 text-blue-600 dark:text-blue-400"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                }`}
+              >
+                Balances
+              </button>
+              <button
+                onClick={() => setActiveTab("photos")}
+                className={`flex-1 px-6 py-3 text-sm font-medium ${
+                  activeTab === "photos"
+                    ? "border-b-2 border-blue-600 text-blue-600 dark:text-blue-400"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                }`}
+              >
+                Photos
+              </button>
+            </div>
+
+            <div className="p-6">
+              {/* Expenses Tab */}
+              {activeTab === "expenses" && (
+                <>
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">My Expenses</p>
+                      <p className="text-2xl font-bold">{formatCurrency(myExpenses, event.currency)}</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <p className="text-lg font-bold">
-                        {formatCurrency(expense.amount, event.currency)}
-                      </p>
-                      {event.status === "open" && (
-                        <button
-                          onClick={() => handleDeleteExpense(expense.id)}
-                          className="text-red-600 hover:text-red-700 text-sm"
-                        >
-                          Delete
-                        </button>
-                      )}
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Expenses</p>
+                      <p className="text-2xl font-bold">{formatCurrency(totalExpenses, event.currency)}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+
+                  {/* Expenses List */}
+                  {expenses.length === 0 ? (
+                    <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+                      No expenses yet.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* Group by date */}
+                      {(() => {
+                        const grouped = expenses.reduce((acc, expense) => {
+                          const date = expense.expense_date 
+                            ? new Date(expense.expense_date).toLocaleDateString()
+                            : new Date(expense.created_at).toLocaleDateString();
+                          if (!acc[date]) acc[date] = [];
+                          acc[date].push(expense);
+                          return acc;
+                        }, {} as Record<string, typeof expenses>);
+
+                        return Object.entries(grouped).map(([date, dateExpenses]) => (
+                          <div key={date} className="mb-6">
+                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
+                              {date === new Date().toLocaleDateString() ? "Today" : date}
+                            </h3>
+                            <div className="space-y-2">
+                              {dateExpenses.map((expense) => (
+                                <div
+                                  key={expense.id}
+                                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
+                                >
+                                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                                    {expense.receipts && expense.receipts.length > 0 ? "📷" : "💰"}
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="font-medium">{expense.description}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                      Paid by {expense.paid_by?.name || "Unknown"}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                    <p className="text-lg font-bold">
+                                      {formatCurrency(expense.amount, expense.currency || event.currency)}
+                                    </p>
+                                    {event.status === "open" && (
+                                      <button
+                                        onClick={() => handleDeleteExpense(expense.id)}
+                                        className="text-red-600 hover:text-red-700 text-sm"
+                                      >
+                                        Delete
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Balances Tab */}
+              {activeTab === "balances" && (
+                <>
+                  {allBalanced ? (
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">👍</span>
+                        <div>
+                          <p className="font-medium text-green-800 dark:text-green-200">All good!</p>
+                          <p className="text-sm text-green-600 dark:text-green-400">You don't need to balance</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mb-6">
+                      <button className="text-blue-600 dark:text-blue-400 text-sm hover:underline">
+                        View All Suggested Reimbursements
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Balances</h3>
+                    {balances.map((balance) => {
+                      const participant = participants.find(p => p.id === balance.participantId);
+                      const isMe = participant?.user_id === currentUserId;
+                      const isPositive = balance.balance > 0.01;
+                      const isNegative = balance.balance < -0.01;
+                      const isZero = !isPositive && !isNegative;
+
+                      return (
+                        <div
+                          key={balance.participantId}
+                          className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-white font-medium">
+                            {balance.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">
+                              {balance.name} {isMe && "(Me)"}
+                            </p>
+                          </div>
+                          <div className={`text-lg font-bold ${
+                            isPositive 
+                              ? "text-green-600 dark:text-green-400" 
+                              : isNegative 
+                              ? "text-red-600 dark:text-red-400"
+                              : "text-gray-500 dark:text-gray-400"
+                          }`}>
+                            {isPositive && "+"}
+                            {formatCurrency(Math.abs(balance.balance), event.currency)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* Photos Tab */}
+              {activeTab === "photos" && (
+                <div>
+                  {expenses.length === 0 ? (
+                    <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+                      No expenses with photos yet.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {expenses
+                        .filter(e => e.receipts && e.receipts.length > 0)
+                        .flatMap(e => e.receipts || [])
+                        .map((receipt: any) => (
+                          <div key={receipt.id} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                            <img
+                              src={receipt.file_url}
+                              alt="Receipt"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Participants */}

@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { registerDeviceSession } from '@/lib/device-session';
-import { sendVerificationEmail } from '@/lib/email';
 
 /**
  * Sign in with email and password
@@ -46,19 +45,22 @@ export async function signInWithPassword(formData: FormData) {
  * Sign up with email and password
  */
 export async function signUpWithPassword(formData: FormData) {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  const name = formData.get('name') as string;
+  try {
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const name = formData.get('name') as string;
 
-  if (!email || !password) {
-    return { error: 'Email and password are required' };
-  }
+    console.log('🔐 Starting signup for:', email);
 
-  if (password.length < 8) {
-    return { error: 'Password must be at least 8 characters' };
-  }
+    if (!email || !password) {
+      return { error: 'Email and password are required' };
+    }
 
-  const supabase = await createClient();
+    if (password.length < 8) {
+      return { error: 'Password must be at least 8 characters' };
+    }
+
+    const supabase = await createClient();
 
   // Sign up the user
   const { data, error } = await supabase.auth.signUp({
@@ -96,19 +98,20 @@ export async function signUpWithPassword(formData: FormData) {
   );
   
   if (syncResult.error) {
-    console.error('Failed to sync user to database:', syncResult.error);
-    console.error('Error details:', syncResult.details);
-    console.error('Error code:', syncResult.code);
+    console.error('❌ Failed to sync user to database:');
+    console.error('   Error:', syncResult.error);
+    console.error('   Details:', syncResult.details);
+    console.error('   Code:', syncResult.code);
+    console.error('   Hint:', syncResult.hint);
     
-    // Return a user-friendly error message
-    if (syncResult.error.includes('permission') || syncResult.error.includes('policy')) {
-      return { 
-        error: 'Database configuration error. Please ensure the database migration has been run. If the problem persists, contact support.' 
-      };
-    }
+    // Return the detailed error message - include all available info
+    const errorMessage = syncResult.error || 'Database error saving new user';
+    const detailsMessage = syncResult.details ? ` Details: ${syncResult.details}` : '';
+    const codeMessage = syncResult.code ? ` (Code: ${syncResult.code})` : '';
+    const hintMessage = syncResult.hint ? ` Hint: ${syncResult.hint}` : '';
     
     return { 
-      error: syncResult.error || 'Database error saving new user. Please try again or contact support if the issue persists.' 
+      error: `${errorMessage}${codeMessage}${detailsMessage}${hintMessage}` 
     };
   }
 
@@ -122,55 +125,21 @@ export async function signUpWithPassword(formData: FormData) {
     };
   }
 
-  // If email confirmation is required, ensure verification email is sent
-  // Supabase should automatically send an email when signUp is called, but we'll:
-  // 1. Try to resend via Supabase (in case the first one didn't send)
-  // 2. Send our own custom email as a backup/confirmation
-  try {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    
-    // Resend confirmation email via Supabase (this ensures Supabase's email is sent)
-    // This uses Supabase's built-in email service
-    const { error: resendError } = await supabase.auth.resend({
-      type: 'signup',
-      email: email.trim().toLowerCase(),
-      options: {
-        emailRedirectTo: `${siteUrl}/auth/callback`,
-      },
-    });
-    
-    if (resendError) {
-      console.warn('⚠️ Supabase email resend had an issue:', resendError.message);
-      console.log('📧 This might be normal if email confirmation is disabled in Supabase settings');
-    } else {
-      console.log('✅ Supabase verification email sent successfully');
-    }
-    
-    // Also send our custom verification email as a backup/confirmation
-    // This ensures the user gets an email even if Supabase's email service isn't configured
-    const emailResult = await sendVerificationEmail(
-      email.trim().toLowerCase(),
-      name || null,
-      siteUrl
-    );
-    
-    if (emailResult.success) {
-      console.log('✅ Custom verification email sent successfully');
-    } else {
-      console.error('❌ Failed to send custom verification email:', emailResult.error);
-      // Don't fail signup if custom email fails
-    }
-  } catch (emailError) {
-    console.error('❌ Error in email verification process:', emailError);
-    // Don't fail signup if email sending fails - Supabase may have sent one
-  }
+  // Supabase automatically sends verification email when signUp is called
+  // No need to send custom email - Supabase handles it
 
-  // Inform the user to check their email
-  return { 
-    success: true, 
-    user: data.user,
-    message: 'Account created! Please check your email to confirm your account before signing in. If you don\'t see the email, check your spam folder.' 
-  };
+    // Inform the user to check their email
+    return { 
+      success: true, 
+      user: data.user,
+      message: 'Account created! Please check your email to confirm your account before signing in. If you don\'t see the email, check your spam folder.' 
+    };
+  } catch (error) {
+    console.error('❌ Unexpected error in signUpWithPassword:', error);
+    return { 
+      error: `Unexpected error: ${error instanceof Error ? error.message : String(error)}` 
+    };
+  }
 }
 
 /**

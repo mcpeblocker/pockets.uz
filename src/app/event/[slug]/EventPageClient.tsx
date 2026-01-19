@@ -315,7 +315,7 @@ export default function EventPageClient({
                         Paid by {expense.paid_by?.name || 'Unknown'}
                       </p>
                     </div>
-                    <p className="text-lg font-bold">{formatCurrency(expense.amount, event.currency)}</p>
+                    <p className="text-lg font-bold">{formatCurrency(expense.amount, expense.currency || event.currency)}</p>
                   </div>
                 ))}
               </div>
