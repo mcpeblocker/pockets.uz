@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: rejection-web
+    container_name: pockets-dev-web
     env_file:
       - .env
     networks:
