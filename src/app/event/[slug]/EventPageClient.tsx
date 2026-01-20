@@ -463,9 +463,9 @@ export default function EventPageClient({
                         >
                           ?
                         </button>
-                        <div className="absolute left-0 bottom-full mb-2 w-48 p-2 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                          <p className="mb-1"><span className="text-green-400 font-semibold">Green (+)</span> = is owed money</p>
-                          <p><span className="text-red-400 font-semibold">Red (-)</span> = owes money</p>
+                        <div className="absolute left-0 bottom-full mb-2 w-56 p-2 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                          <p className="mb-1"><span className="text-green-400 font-semibold">Green (+)</span> = money you are supposed to receive</p>
+                          <p><span className="text-red-400 font-semibold">Red (-)</span> = money you are supposed to pay up</p>
                           <div className="absolute left-2 bottom-0 transform translate-y-full">
                             <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
                           </div>
