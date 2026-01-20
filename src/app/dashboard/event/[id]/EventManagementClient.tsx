@@ -219,28 +219,50 @@ export default function EventManagementClient({
       setExpenseStatus("error");
       setExpenseMessage(result.error);
     } else {
-      // Upload photos if expense was created successfully
+      // Bug Fix #10: Upload photos if expense was created successfully with proper error handling
       if (result.expense && expensePhotos.length > 0) {
         try {
-          const uploadPromises = expensePhotos.map(async (photo) => {
-            const uploadFormData = new FormData();
-            uploadFormData.append('file', photo);
-            uploadFormData.append('expenseId', result.expense.id);
-            
-            const uploadResponse = await fetch('/api/upload-receipt', {
-              method: 'POST',
-              body: uploadFormData,
-            });
-            
-            if (!uploadResponse.ok) {
-              console.error(`Failed to upload photo: ${photo.name}`);
-            }
-          });
+          const uploadResults = await Promise.allSettled(
+            expensePhotos.map(async (photo) => {
+              const uploadFormData = new FormData();
+              uploadFormData.append('file', photo);
+              uploadFormData.append('expenseId', result.expense.id);
+              
+              const uploadResponse = await fetch('/api/upload-receipt', {
+                method: 'POST',
+                body: uploadFormData,
+              });
+              
+              if (!uploadResponse.ok) {
+                const errorData = await uploadResponse.json().catch(() => ({}));
+                throw new Error(errorData.error || `Failed to upload ${photo.name}`);
+              }
+              
+              return { photo: photo.name, success: true };
+            })
+          );
           
-          await Promise.all(uploadPromises);
+          // Check for failed uploads
+          const failedUploads = uploadResults
+            .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+            .map((result) => result.reason?.message || 'Unknown error');
+          
+          if (failedUploads.length > 0) {
+            setExpenseStatus("error");
+            setExpenseMessage(
+              `Expense created, but some photos failed to upload: ${failedUploads.join(', ')}`
+            );
+            // Don't reload - let user see the error and retry if needed
+            return;
+          }
         } catch (uploadError) {
           console.error('Error uploading photos:', uploadError);
-          // Don't fail the expense creation if photo upload fails
+          setExpenseStatus("error");
+          setExpenseMessage(
+            `Expense created, but photo upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`
+          );
+          // Don't reload - let user see the error
+          return;
         }
       }
       

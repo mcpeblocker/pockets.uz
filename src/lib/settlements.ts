@@ -46,31 +46,38 @@ export function calculateBalances(
     participantOwed[p.id] = 0;
   });
 
+  // Bug Fix #1 & #5: Only use splits that exist, don't fall back to equal split
+  // Group splits by expense to identify expenses without splits
+  const splitsByExpense: Record<string, ExpenseSplit[]> = {};
   if (expenseSplits && expenseSplits.length > 0) {
-    // Use custom splits
     expenseSplits.forEach(split => {
-      if (split.amount !== null) {
-        participantOwed[split.participant_id] = 
-          (participantOwed[split.participant_id] || 0) + split.amount;
-      } else if (split.percentage !== null) {
-        // Find the expense for this split
-        const expense = expenses.find(e => e.id === split.expense_id);
-        if (expense) {
+      if (!splitsByExpense[split.expense_id]) {
+        splitsByExpense[split.expense_id] = [];
+      }
+      splitsByExpense[split.expense_id].push(split);
+    });
+  }
+
+  // Process each expense
+  expenses.forEach(expense => {
+    const expenseSplitsForExpense = splitsByExpense[expense.id] || [];
+    
+    if (expenseSplitsForExpense.length > 0) {
+      // Use the splits for this expense
+      expenseSplitsForExpense.forEach(split => {
+        if (split.amount !== null && split.amount !== undefined) {
+          participantOwed[split.participant_id] = 
+            (participantOwed[split.participant_id] || 0) + split.amount;
+        } else if (split.percentage !== null && split.percentage !== undefined) {
           const amount = (expense.amount * split.percentage) / 100;
           participantOwed[split.participant_id] = 
             (participantOwed[split.participant_id] || 0) + amount;
         }
-      }
-    });
-  } else {
-    // Fall back to equal split (original behavior)
-    expenses.forEach(expense => {
-      const sharePerPerson = expense.amount / participants.length;
-      participants.forEach(p => {
-        participantOwed[p.id] = (participantOwed[p.id] || 0) + sharePerPerson;
       });
-    });
-  }
+    }
+    // Bug Fix #1 & #5: If no splits exist for an expense, it's treated as a personal expense
+    // (payer paid, but no one owes anything) - do nothing, don't fall back to equal split
+  });
 
   // Calculate final balances (positive = owed money, negative = owes money)
   return participants.map(p => ({

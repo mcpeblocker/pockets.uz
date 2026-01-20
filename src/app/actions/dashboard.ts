@@ -319,8 +319,20 @@ export async function addExpense(formData: FormData) {
   }
 
   // Handle expense splits - use selected participants or custom splits
-  if (splitParticipants.length > 0) {
+  // Bug Fix #1 & #5: For personal expenses (splitType="none"), don't create splits
+  // Balance calculation will treat expenses without splits as personal expenses
+  if (splitType === "none") {
+    // Personal expense - only payer is involved, no one owes anything
+    // Don't create any splits - balance calculation will handle this correctly
+    // (expenses without splits are treated as personal)
+  } else if (splitParticipants.length > 0 && splitType === "equal") {
     // Equal split among selected participants
+    // Bug Fix #8: Server-side validation for empty participant list
+    if (splitParticipants.length === 0) {
+      await supabase.from("expenses").delete().eq("id", expense.id);
+      return { error: "At least one participant must be selected for splitting" };
+    }
+    
     const splitAmount = amount / splitParticipants.length;
     const splitRecords = splitParticipants.map((participantId: string) => ({
       expense_id: expense.id,
@@ -339,42 +351,50 @@ export async function addExpense(formData: FormData) {
       return { error: "Failed to add expense splits" };
     }
   } else if (splitType === "custom") {
-    // Custom splits (existing logic)
+    // Custom splits
     const splitsJson = formData.get("splits") as string;
-    if (splitsJson) {
-      try {
-        const splits = JSON.parse(splitsJson);
-
-        // Validate splits
-        const validation = validateExpenseSplits(amount, splits);
-        if (!validation.valid) {
-          // Delete the expense we just created
-          await supabase.from("expenses").delete().eq("id", expense.id);
-          return { error: validation.error || "Invalid expense splits" };
-        }
-
-        // Create splits
-        const splitRecords = splits.map((split: any) => ({
-          expense_id: expense.id,
-          participant_id: split.participantId,
-          amount: split.amount !== undefined ? split.amount : null,
-          percentage: split.percentage !== undefined ? split.percentage : null,
-        }));
-
-        const { error: splitsError } = await supabase
-          .from("expense_splits")
-          .insert(splitRecords);
-
-        if (splitsError) {
-          console.error("Error adding expense splits:", splitsError);
-          await supabase.from("expenses").delete().eq("id", expense.id);
-          return { error: "Failed to add expense splits" };
-        }
-      } catch (e) {
-        await supabase.from("expenses").delete().eq("id", expense.id);
-        return { error: "Invalid splits data" };
-      }
+    if (!splitsJson) {
+      await supabase.from("expenses").delete().eq("id", expense.id);
+      return { error: "Custom splits data is required" };
     }
+    
+    try {
+      const splits = JSON.parse(splitsJson);
+
+      // Validate splits
+      const validation = validateExpenseSplits(amount, splits);
+      if (!validation.valid) {
+        // Delete the expense we just created
+        await supabase.from("expenses").delete().eq("id", expense.id);
+        return { error: validation.error || "Invalid expense splits" };
+      }
+
+      // Create splits
+      const splitRecords = splits.map((split: any) => ({
+        expense_id: expense.id,
+        participant_id: split.participantId,
+        amount: split.amount !== undefined ? split.amount : null,
+        percentage: split.percentage !== undefined ? split.percentage : null,
+      }));
+
+      const { error: splitsError } = await supabase
+        .from("expense_splits")
+        .insert(splitRecords);
+
+      if (splitsError) {
+        console.error("Error adding expense splits:", splitsError);
+        await supabase.from("expenses").delete().eq("id", expense.id);
+        return { error: "Failed to add expense splits" };
+      }
+    } catch (e) {
+      await supabase.from("expenses").delete().eq("id", expense.id);
+      return { error: "Invalid splits data" };
+    }
+  } else {
+    // Fallback: if no split type specified but split is enabled, treat as equal split
+    // This shouldn't happen with proper client validation, but handle it gracefully
+    await supabase.from("expenses").delete().eq("id", expense.id);
+    return { error: "Invalid split configuration" };
   }
 
   // Update event currency if needed
@@ -502,40 +522,74 @@ export async function updateExpense(expenseId: string, formData: FormData) {
     return { error: "Failed to update expense" };
   }
 
-  // Delete existing splits and recreate if custom
+  // Bug Fix #3 & #9: Delete existing splits and recreate based on split type
   await supabase.from("expense_splits").delete().eq("expense_id", expenseId);
 
-  if (splitType === "custom") {
+  // Get split participants for equal split
+  const splitParticipantsJson = formData.get("splitParticipants") as string;
+  let splitParticipants: string[] = [];
+  if (splitParticipantsJson) {
+    try {
+      splitParticipants = JSON.parse(splitParticipantsJson);
+    } catch (e) {
+      console.error("Error parsing splitParticipants for update:", e);
+    }
+  }
+
+  if (splitType === "none") {
+    // Personal expense - don't create any splits
+    // Balance calculation will treat expenses without splits as personal
+  } else if (splitType === "equal" && splitParticipants.length > 0) {
+    // Equal split among selected participants
+    const splitAmount = amount / splitParticipants.length;
+    const splitRecords = splitParticipants.map((participantId: string) => ({
+      expense_id: expenseId,
+      participant_id: participantId,
+      amount: splitAmount,
+      percentage: null,
+    }));
+
+    const { error: splitsError } = await supabase
+      .from("expense_splits")
+      .insert(splitRecords);
+
+    if (splitsError) {
+      console.error("Error updating expense splits (equal):", splitsError);
+      return { error: "Failed to update expense splits" };
+    }
+  } else if (splitType === "custom") {
     const splitsJson = formData.get("splits") as string;
-    if (splitsJson) {
-      try {
-        const splits = JSON.parse(splitsJson);
+    if (!splitsJson) {
+      return { error: "Custom splits data is required" };
+    }
+    
+    try {
+      const splits = JSON.parse(splitsJson);
 
-        // Validate splits
-        const validation = validateExpenseSplits(amount, splits);
-        if (!validation.valid) {
-          return { error: validation.error || "Invalid expense splits" };
-        }
-
-        // Create splits
-        const splitRecords = splits.map((split: any) => ({
-          expense_id: expenseId,
-          participant_id: split.participantId,
-          amount: split.amount !== undefined ? split.amount : null,
-          percentage: split.percentage !== undefined ? split.percentage : null,
-        }));
-
-        const { error: splitsError } = await supabase
-          .from("expense_splits")
-          .insert(splitRecords);
-
-        if (splitsError) {
-          console.error("Error updating expense splits:", splitsError);
-          return { error: "Failed to update expense splits" };
-        }
-      } catch (e) {
-        return { error: "Invalid splits data" };
+      // Validate splits
+      const validation = validateExpenseSplits(amount, splits);
+      if (!validation.valid) {
+        return { error: validation.error || "Invalid expense splits" };
       }
+
+      // Create splits
+      const splitRecords = splits.map((split: any) => ({
+        expense_id: expenseId,
+        participant_id: split.participantId,
+        amount: split.amount !== undefined ? split.amount : null,
+        percentage: split.percentage !== undefined ? split.percentage : null,
+      }));
+
+      const { error: splitsError } = await supabase
+        .from("expense_splits")
+        .insert(splitRecords);
+
+      if (splitsError) {
+        console.error("Error updating expense splits (custom):", splitsError);
+        return { error: "Failed to update expense splits" };
+      }
+    } catch (e) {
+      return { error: "Invalid splits data" };
     }
   }
 
@@ -596,6 +650,50 @@ export async function deleteExpense(expenseId: string, eventId: string) {
   if (error) {
     console.error("Error deleting expense:", error);
     return { error: "Failed to delete expense" };
+  }
+
+  // Bug Fix #7: Check if all expenses are deleted and revert currency to default
+  const { data: remainingExpenses } = await supabase
+    .from("expenses")
+    .select("currency")
+    .eq("event_id", eventId);
+
+  if (!remainingExpenses || remainingExpenses.length === 0) {
+    // All expenses deleted - revert to default currency (USD)
+    await supabase
+      .from("events")
+      .update({ currency: "USD" })
+      .eq("id", eventId);
+  } else {
+    // Recalculate dominant currency from remaining expenses
+    const currencyCounts: Record<string, number> = {};
+    remainingExpenses.forEach((e: any) => {
+      const curr = e.currency || "USD";
+      currencyCounts[curr] = (currencyCounts[curr] || 0) + 1;
+    });
+
+    let dominantCurrency = "USD";
+    let maxCount = 0;
+    Object.entries(currencyCounts).forEach(([curr, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        dominantCurrency = curr;
+      }
+    });
+
+    // Get current event currency
+    const { data: currentEvent } = await supabase
+      .from("events")
+      .select("currency")
+      .eq("id", eventId)
+      .single();
+
+    if (currentEvent && currentEvent.currency !== dominantCurrency) {
+      await supabase
+        .from("events")
+        .update({ currency: dominantCurrency })
+        .eq("id", eventId);
+    }
   }
 
   await logEventAction(supabase, eventId, "expense_deleted", user.id, null, {

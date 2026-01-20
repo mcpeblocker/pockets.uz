@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if this participant has any expenses
+    // Bug Fix #2 & #4: Check if this participant has any expenses (as payer or in splits)
     const { data: expenses } = await supabase
       .from('expenses')
       .select('id')
@@ -38,6 +38,20 @@ export async function POST(request: Request) {
     if (expenses && expenses.length > 0) {
       return NextResponse.json(
         { error: 'Cannot leave: you have expenses associated with this event' },
+        { status: 400 }
+      );
+    }
+
+    // Check if participant is in any expense splits (owes money)
+    const { data: splits } = await supabase
+      .from('expense_splits')
+      .select('id')
+      .eq('participant_id', participantId)
+      .limit(1);
+
+    if (splits && splits.length > 0) {
+      return NextResponse.json(
+        { error: 'Cannot leave: you are included in expense splits for this event' },
         { status: 400 }
       );
     }
