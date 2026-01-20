@@ -23,18 +23,32 @@ export default function SignUpPage() {
     formData.append('password', password);
     formData.append('name', name);
 
-    const result = await signUpWithPassword(formData);
-    if (result.error) {
-      setStatus('error');
-      setMessage(result.error);
-    } else {
-      setStatus('success');
-      if (result.message) {
-        setMessage(result.message);
+    try {
+      console.log('🔄 Starting signup process...');
+      const result = await signUpWithPassword(formData);
+      
+      console.log('📥 Signup result:', result);
+      
+      if (result.error) {
+        console.error('❌ Signup error:', result.error);
+        console.error('❌ Full result object:', JSON.stringify(result, null, 2));
+        setStatus('error');
+        // Show the full error message with all details
+        setMessage(result.error);
       } else {
-        setMessage('Account created! Redirecting...');
-        setTimeout(() => router.push('/dashboard'), 1500);
+        console.log('✅ Signup successful!');
+        setStatus('success');
+        if (result.message) {
+          setMessage(result.message);
+        } else {
+          setMessage('Account created! Redirecting...');
+          setTimeout(() => router.push('/dashboard'), 1500);
+        }
       }
+    } catch (error) {
+      console.error('❌ Unexpected error during signup:', error);
+      setStatus('error');
+      setMessage(`Unexpected error: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

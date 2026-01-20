@@ -2,8 +2,15 @@
 -- QUICK FIX: Add Missing User INSERT Policy
 -- ============================================================================
 -- Run this in Supabase SQL Editor if you're getting "Database configuration error"
--- during signup. This adds the critical policy that allows users to insert
--- their own record during signup.
+-- or "Database error saving new user" during signup.
+--
+-- This script:
+-- 1. Enables RLS on users table
+-- 2. Creates the critical INSERT policy (allows users to insert their own record)
+-- 3. Creates the UPDATE policy (allows users to update their own record)
+-- 4. Verifies the policies were created
+--
+-- IMPORTANT: Run CHECK_DATABASE_SETUP.sql first to see what's missing!
 -- ============================================================================
 
 -- Enable RLS on users table (if not already enabled)
