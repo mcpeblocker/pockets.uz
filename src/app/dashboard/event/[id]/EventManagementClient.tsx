@@ -1116,7 +1116,25 @@ export default function EventManagementClient({
                   )}
 
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Balances</h3>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Balances</h3>
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          className="w-4 h-4 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 text-xs font-medium flex items-center justify-center hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+                          aria-label="Balance information"
+                        >
+                          ?
+                        </button>
+                        <div className="absolute left-0 bottom-full mb-2 w-48 p-2 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                          <p className="mb-1"><span className="text-green-400 font-semibold">Green (+)</span> = is owed money</p>
+                          <p><span className="text-red-400 font-semibold">Red (-)</span> = owes money</p>
+                          <div className="absolute left-2 bottom-0 transform translate-y-full">
+                            <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     {balances.map((balance) => {
                       const participant = participants.find(p => p.id === balance.participantId);
                       const isMe = participant?.user_id === currentUserId;
