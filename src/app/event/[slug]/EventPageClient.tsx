@@ -12,6 +12,8 @@ interface EventPageClientProps {
   participants: Participant[];
   expenses: Array<Expense & { paid_by: { id: string; name: string } }>;
   settlements: Settlement[];
+  currentUser: { id: string; email: string; name: string } | null;
+  userParticipantId: string | null;
 }
 
 export default function EventPageClient({
@@ -19,11 +21,13 @@ export default function EventPageClient({
   participants,
   expenses,
   settlements,
+  currentUser,
+  userParticipantId,
 }: EventPageClientProps) {
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [joinStatus, setJoinStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [joinMessage, setJoinMessage] = useState('');
-  const [myParticipantId, setMyParticipantId] = useState<string | null>(null);
+  const [myParticipantId, setMyParticipantId] = useState<string | null>(userParticipantId);
 
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const sharePerPerson = participants.length > 0 ? totalExpenses / participants.length : 0;
@@ -40,13 +44,42 @@ export default function EventPageClient({
   const totalSettlementAmount = settlements.reduce((sum, s) => sum + s.amount, 0);
   const pendingAmount = totalSettlementAmount - totalPaidAmount;
 
-  // Check if user already joined from this device
+  // Check if user already joined from this device (for non-authenticated users)
   useEffect(() => {
-    const storedId = localStorage.getItem(`event_${event.id}_participant`);
-    if (storedId) {
-      setMyParticipantId(storedId);
+    if (!userParticipantId) {
+      const storedId = localStorage.getItem(`event_${event.id}_participant`);
+      if (storedId) {
+        setMyParticipantId(storedId);
+      }
     }
-  }, [event.id]);
+  }, [event.id, userParticipantId]);
+
+  // Quick join for authenticated users
+  async function handleQuickJoin() {
+    if (!currentUser) return;
+    
+    setJoinStatus('loading');
+    
+    const formData = new FormData();
+    formData.append('eventId', event.id);
+    formData.append('name', currentUser.name);
+    formData.append('email', currentUser.email);
+    formData.append('userId', currentUser.id);
+    
+    const result = await joinEvent(formData);
+
+    if (result.error) {
+      setJoinStatus('error');
+      setJoinMessage(result.error);
+    } else {
+      setJoinStatus('success');
+      setJoinMessage('Successfully joined the event!');
+      if (result.participantId) {
+        setMyParticipantId(result.participantId);
+      }
+      window.location.reload();
+    }
+  }
 
   async function handleJoinSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -221,8 +254,34 @@ export default function EventPageClient({
             </div>
           )}
 
-          {/* Join Button */}
-          {event.status === 'open' && !showJoinForm && !myParticipantId && (
+          {/* Join Button for Authenticated Users */}
+          {event.status === 'open' && !myParticipantId && currentUser && (
+            <div className="mb-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 className="text-xl font-bold mb-4">Join Event</h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Join as <strong>{currentUser.name}</strong> ({currentUser.email})
+                </p>
+                
+                {joinStatus === 'error' && (
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-800 dark:text-red-200 mb-4">
+                    {joinMessage}
+                  </div>
+                )}
+                
+                <button
+                  onClick={handleQuickJoin}
+                  disabled={joinStatus === 'loading'}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                >
+                  {joinStatus === 'loading' ? 'Joining...' : 'Join This Event'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Join Button for Non-Authenticated Users */}
+          {event.status === 'open' && !showJoinForm && !myParticipantId && !currentUser && (
             <div className="mb-6">
               <button
                 onClick={() => setShowJoinForm(true)}
@@ -233,8 +292,8 @@ export default function EventPageClient({
             </div>
           )}
 
-          {/* Join Form */}
-          {showJoinForm && event.status === 'open' && (
+          {/* Join Form for Non-Authenticated Users */}
+          {showJoinForm && event.status === 'open' && !currentUser && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
               <h2 className="text-xl font-bold mb-4">Join Event</h2>
               <form onSubmit={handleJoinSubmit} className="space-y-4">
@@ -256,19 +315,20 @@ export default function EventPageClient({
 
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium mb-2">
-                    Email
+                    Email *
                   </label>
                   <input
                     id="email"
                     name="email"
                     type="email"
+                    required
                     placeholder="your@email.com"
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
                   />
                 </div>
 
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  * Email is required for settlement notifications
+                  Email is required for settlement notifications
                 </p>
 
                 {joinStatus === 'error' && (

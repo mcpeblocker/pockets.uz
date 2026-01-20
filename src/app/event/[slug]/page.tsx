@@ -5,6 +5,7 @@ import {
   getEventExpenses,
   getEventSettlements,
 } from '@/app/actions/events';
+import { getUser } from '@/app/actions/auth';
 import EventPageClient from './EventPageClient';
 
 export default async function EventPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -15,11 +16,18 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
     notFound();
   }
 
+  const user = await getUser();
+
   const [participants, expenses, settlements] = await Promise.all([
     getEventParticipants(event.id),
     getEventExpenses(event.id),
     getEventSettlements(event.id),
   ]);
+
+  // Check if authenticated user is already a participant
+  const userParticipant = user 
+    ? participants.find(p => p.user_id === user.id || p.email?.toLowerCase() === user.email?.toLowerCase())
+    : null;
 
   return (
     <EventPageClient
@@ -27,6 +35,8 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
       participants={participants}
       expenses={expenses}
       settlements={settlements}
+      currentUser={user ? { id: user.id, email: user.email || '', name: user.user_metadata?.name || user.email?.split('@')[0] || '' } : null}
+      userParticipantId={userParticipant?.id || null}
     />
   );
 }

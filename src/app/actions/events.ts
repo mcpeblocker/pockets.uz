@@ -4,10 +4,12 @@ import { createClient } from '@/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
 
 // V2: Enhanced join event with duplicate prevention
+// V3: Support for authenticated users
 export async function joinEvent(formData: FormData) {
   const eventId = formData.get('eventId') as string;
   const name = formData.get('name') as string;
   const email = formData.get('email') as string;
+  const userId = formData.get('userId') as string | null;
 
   if (!eventId || !name) {
     return { error: 'Event ID and name are required' };
@@ -40,6 +42,24 @@ export async function joinEvent(formData: FormData) {
     return { error: 'This event is closed and no longer accepting participants' };
   }
 
+  // Check for duplicate by user_id (for authenticated users)
+  if (userId) {
+    const { data: existingByUser } = await supabase
+      .from('participants')
+      .select('id, name')
+      .eq('event_id', eventId)
+      .eq('user_id', userId)
+      .single();
+
+    if (existingByUser) {
+      return { 
+        error: `You have already joined this event as "${existingByUser.name}".`,
+        alreadyJoined: true,
+        participantId: existingByUser.id
+      };
+    }
+  }
+
   // V2: Check for duplicate email in same event
   const { data: existing } = await supabase
     .from('participants')
@@ -56,14 +76,16 @@ export async function joinEvent(formData: FormData) {
     };
   }
 
-  // Add participant
+  // Add participant (with user_id if authenticated)
   const { data: participant, error } = await supabase
     .from('participants')
     .insert({
       event_id: eventId,
+      user_id: userId || null,
       name,
       email: email || null,
       payment_status: 'pending',
+      created_by: userId || null,
     })
     .select('id, participant_token')
     .single();
