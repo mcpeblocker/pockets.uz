@@ -162,18 +162,52 @@ export async function getUserEvents() {
     return [];
   }
 
-  const { data: events, error } = await supabase
+  // Get events where user is the owner
+  const { data: ownedEvents, error: ownedError } = await supabase
     .from("events")
     .select("*")
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Error fetching events:", error);
-    return [];
+  if (ownedError) {
+    console.error("Error fetching owned events:", ownedError);
   }
 
-  return events || [];
+  // Get events where user is a participant (but not owner)
+  const { data: participantRecords, error: participantError } = await supabase
+    .from("participants")
+    .select("event_id")
+    .eq("user_id", user.id);
+
+  if (participantError) {
+    console.error("Error fetching participant events:", participantError);
+  }
+
+  const participantEventIds = (participantRecords || [])
+    .map((p) => p.event_id)
+    .filter((id) => !ownedEvents?.some((e) => e.id === id)); // Exclude already owned events
+
+  let participatedEvents: any[] = [];
+  if (participantEventIds.length > 0) {
+    const { data: pEvents, error: pEventsError } = await supabase
+      .from("events")
+      .select("*")
+      .in("id", participantEventIds)
+      .order("created_at", { ascending: false });
+
+    if (pEventsError) {
+      console.error("Error fetching participated events:", pEventsError);
+    } else {
+      participatedEvents = pEvents || [];
+    }
+  }
+
+  // Combine and sort by created_at
+  const allEvents = [...(ownedEvents || []), ...participatedEvents].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  return allEvents;
 }
 
 // V2: Enhanced expense creation with custom splits and categories

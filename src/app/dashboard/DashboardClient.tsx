@@ -207,34 +207,48 @@ export default function DashboardClient({ user, events, initialShowCreate = fals
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {events.map((event) => (
-                  <Link
-                    key={event.id}
-                    href={`/dashboard/event/${event.id}`}
-                    className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-bold">{event.title}</h3>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          event.status === 'open'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                        }`}
-                      >
-                        {event.status === 'open' ? 'Open' : 'Closed'}
-                      </span>
-                    </div>
-                    {event.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-                        {event.description}
-                      </p>
-                    )}
-                    <div className="text-sm text-gray-500">
-                      /event/{event.slug}
-                    </div>
-                  </Link>
-                ))}
+                {events.map((event) => {
+                  const isOwner = event.owner_id === user.id;
+                  return (
+                    <Link
+                      key={event.id}
+                      href={`/dashboard/event/${event.id}`}
+                      className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <h3 className="text-lg font-bold">{event.title}</h3>
+                        <div className="flex flex-col items-end gap-1">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              event.status === 'open'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                            }`}
+                          >
+                            {event.status === 'open' ? 'Open' : 'Closed'}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              isOwner
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                            }`}
+                          >
+                            {isOwner ? 'Owner' : 'Participant'}
+                          </span>
+                        </div>
+                      </div>
+                      {event.description && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+                          {event.description}
+                        </p>
+                      )}
+                      <div className="text-sm text-gray-500">
+                        /event/{event.slug}
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
