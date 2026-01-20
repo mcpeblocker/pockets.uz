@@ -471,7 +471,7 @@ export default function EventManagementClient({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Total Expenses
@@ -485,14 +485,6 @@ export default function EventManagementClient({
                   Participants
                 </p>
                 <p className="text-2xl font-bold">{participants.length}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Per Person
-                </p>
-                <p className="text-2xl font-bold">
-                  {formatCurrency(sharePerPerson, event.currency)}
-                </p>
               </div>
             </div>
 

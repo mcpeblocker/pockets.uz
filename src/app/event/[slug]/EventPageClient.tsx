@@ -171,7 +171,7 @@ export default function EventPageClient({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Total Expenses</p>
                 <p className="text-2xl font-bold">{formatCurrency(totalExpenses, event.currency)}</p>
@@ -179,10 +179,6 @@ export default function EventPageClient({
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Participants</p>
                 <p className="text-2xl font-bold">{participants.length}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Per Person</p>
-                <p className="text-2xl font-bold">{formatCurrency(sharePerPerson, event.currency)}</p>
               </div>
             </div>
           </div>
@@ -214,11 +210,11 @@ export default function EventPageClient({
                   <p className="text-xs text-gray-500 mt-1">participants</p>
                 </div>
                 <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Your Share</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Expenses</p>
                   <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    {formatCurrency(sharePerPerson, event.currency)}
+                    {formatCurrency(totalExpenses, event.currency)}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">per person</p>
+                  <p className="text-xs text-gray-500 mt-1">all expenses</p>
                 </div>
               </div>
             </div>
@@ -252,7 +248,7 @@ export default function EventPageClient({
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
               <p className="text-sm font-medium mb-2">💡 If you join this event:</p>
               <p className="text-lg">
-                Per person cost will change from <strong>{formatCurrency(sharePerPerson, event.currency)}</strong> to <strong>{formatCurrency(shareIfJoin, event.currency)}</strong>
+                You'll be able to view all expenses and see your individual balance in the Balances tab.
               </p>
             </div>
           )}
