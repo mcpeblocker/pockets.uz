@@ -6,11 +6,12 @@ import { joinEvent } from '@/app/actions/events';
 import { formatCurrency } from '@/lib/currency';
 import Header from '@/components/Header';
 import HelpButton from '@/components/HelpButton';
+import { calculateBalances } from '@/lib/settlements';
 
 interface EventPageClientProps {
   event: Event;
   participants: Participant[];
-  expenses: Array<Expense & { paid_by: { id: string; name: string } }>;
+  expenses: Array<Expense & { paid_by: { id: string; name: string }; splits?: any[]; receipts?: any[] }>;
   settlements: Settlement[];
   currentUser: { id: string; email: string; name: string } | null;
   userParticipantId: string | null;
@@ -28,10 +29,24 @@ export default function EventPageClient({
   const [joinStatus, setJoinStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [joinMessage, setJoinMessage] = useState('');
   const [myParticipantId, setMyParticipantId] = useState<string | null>(userParticipantId);
+  const [activeTab, setActiveTab] = useState<'expenses' | 'balances' | 'photos'>('expenses');
 
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const sharePerPerson = participants.length > 0 ? totalExpenses / participants.length : 0;
   const shareIfJoin = participants.length > 0 ? totalExpenses / (participants.length + 1) : totalExpenses;
+
+  // Calculate balances
+  const allSplits = expenses.flatMap(e => e.splits || []);
+  const balances = calculateBalances(participants, expenses, allSplits);
+  const allBalanced = balances.every(b => Math.abs(b.balance) < 0.01);
+  
+  // Calculate current user's balance if they're a participant
+  const currentUserParticipant = currentUser 
+    ? participants.find(p => p.user_id === currentUser.id || p.email?.toLowerCase() === currentUser.email?.toLowerCase())
+    : null;
+  const myBalance = currentUserParticipant 
+    ? balances.find(b => b.participantId === currentUserParticipant.id)
+    : null;
 
   // Calculate payment statistics for closed events
   const paidCount = participants.filter(p => p.payment_status === 'paid').length;
@@ -357,29 +372,159 @@ export default function EventPageClient({
             </div>
           )}
 
-          {/* Expenses */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-            <h2 className="text-xl font-bold mb-4">Expenses</h2>
-            {expenses.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">No expenses yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {expenses.map((expense) => (
-                  <div
-                    key={expense.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium">{expense.description}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Paid by {expense.paid_by?.name || 'Unknown'}
-                      </p>
+          {/* Tabs for Expenses, Balances, and Photos */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg mb-6">
+            <div className="flex border-b border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setActiveTab('expenses')}
+                className={`flex-1 px-6 py-3 text-sm font-medium ${
+                  activeTab === 'expenses'
+                    ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                }`}
+              >
+                Expenses
+              </button>
+              <button
+                onClick={() => setActiveTab('balances')}
+                className={`flex-1 px-6 py-3 text-sm font-medium ${
+                  activeTab === 'balances'
+                    ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                }`}
+              >
+                Balances
+              </button>
+              <button
+                onClick={() => setActiveTab('photos')}
+                className={`flex-1 px-6 py-3 text-sm font-medium ${
+                  activeTab === 'photos'
+                    ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                }`}
+              >
+                Photos
+              </button>
+            </div>
+
+            <div className="p-6">
+              {/* Expenses Tab */}
+              {activeTab === 'expenses' && (
+                <>
+                  {expenses.length === 0 ? (
+                    <p className="text-gray-600 dark:text-gray-400 text-center py-8">No expenses yet.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {expenses.map((expense) => (
+                        <div
+                          key={expense.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                        >
+                          <div className="flex items-center gap-3">
+                            {expense.receipts && expense.receipts.length > 0 ? (
+                              <span className="text-xl">📷</span>
+                            ) : (
+                              <span className="text-xl">💰</span>
+                            )}
+                            <div>
+                              <p className="font-medium">{expense.description}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Paid by {expense.paid_by?.name || 'Unknown'}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-lg font-bold">{formatCurrency(expense.amount, expense.currency || event.currency)}</p>
+                        </div>
+                      ))}
                     </div>
-                    <p className="text-lg font-bold">{formatCurrency(expense.amount, expense.currency || event.currency)}</p>
+                  )}
+                </>
+              )}
+
+              {/* Balances Tab */}
+              {activeTab === 'balances' && (
+                <>
+                  {allBalanced ? (
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">👍</span>
+                        <div>
+                          <p className="font-medium text-green-800 dark:text-green-200">All good!</p>
+                          <p className="text-sm text-green-600 dark:text-green-400">You don't need to balance</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Balances</h3>
+                    {balances.map((balance) => {
+                      const participant = participants.find(p => p.id === balance.participantId);
+                      const isMe = currentUserParticipant && participant?.id === currentUserParticipant.id;
+                      const isPositive = balance.balance > 0.01;
+                      const isNegative = balance.balance < -0.01;
+                      const isZero = !isPositive && !isNegative;
+
+                      return (
+                        <div
+                          key={balance.participantId}
+                          className={`flex items-center gap-3 p-3 rounded-lg ${
+                            isMe 
+                              ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                              : 'bg-gray-50 dark:bg-gray-700'
+                          }`}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-white font-medium">
+                            {balance.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">
+                              {balance.name} {isMe && '(Me)'}
+                            </p>
+                          </div>
+                          <div className={`text-lg font-bold ${
+                            isPositive 
+                              ? 'text-green-600 dark:text-green-400' 
+                              : isNegative 
+                              ? 'text-red-600 dark:text-red-400'
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}>
+                            {isPositive && '+'}
+                            {formatCurrency(Math.abs(balance.balance), event.currency)}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
-            )}
+                </>
+              )}
+
+              {/* Photos Tab */}
+              {activeTab === 'photos' && (
+                <div>
+                  {expenses.length === 0 || expenses.every(e => !e.receipts || e.receipts.length === 0) ? (
+                    <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+                      No expenses with photos yet.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {expenses
+                        .filter(e => e.receipts && e.receipts.length > 0)
+                        .flatMap(e => e.receipts || [])
+                        .map((receipt: any) => (
+                          <div key={receipt.id} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                            <img
+                              src={receipt.file_url}
+                              alt="Receipt"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Participants */}

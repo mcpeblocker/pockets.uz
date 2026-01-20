@@ -474,34 +474,36 @@ export default function EventManagementClient({
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              {event.status === "open" && (
-                <Fragment>
-                  <button
-                    onClick={() => setShowEmailNote(true)}
-                    className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg"
-                  >
-                    Edit Email Note
-                  </button>
-                  <button
-                    onClick={handleCloseEvent}
-                    disabled={
-                      participants.length === 0 || expenses.length === 0
-                    }
-                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg"
-                  >
-                    Close Event & Send Settlements
-                  </button>
-                </Fragment>
-              )}
-              <button
-                onClick={handleDeleteEvent}
-                className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg"
-              >
-                Delete Event
-              </button>
-            </div>
+            {/* Action Buttons - Only for owners */}
+            {event.owner_id === currentUserId && (
+              <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                {event.status === "open" && (
+                  <Fragment>
+                    <button
+                      onClick={() => setShowEmailNote(true)}
+                      className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg"
+                    >
+                      Edit Email Note
+                    </button>
+                    <button
+                      onClick={handleCloseEvent}
+                      disabled={
+                        participants.length === 0 || expenses.length === 0
+                      }
+                      className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg"
+                    >
+                      Close Event & Send Settlements
+                    </button>
+                  </Fragment>
+                )}
+                <button
+                  onClick={handleDeleteEvent}
+                  className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg"
+                >
+                  Delete Event
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Email Note Modal */}
@@ -586,7 +588,7 @@ export default function EventManagementClient({
             </div>
           )}
 
-          {/* Add Expense Button */}
+          {/* Add Expense Button - Visible to all participants when event is open */}
           {event.status === "open" && participants.length > 0 && (
             <div className="mb-6">
               <button
@@ -598,8 +600,8 @@ export default function EventManagementClient({
             </div>
           )}
 
-          {/* Add Participant Button */}
-          {event.status === "open" && (
+          {/* Add Participant Button - Only for owners */}
+          {event.status === "open" && event.owner_id === currentUserId && (
             <div className="mb-6">
               <button
                 onClick={() => setShowAddParticipant(true)}
@@ -1058,7 +1060,7 @@ export default function EventManagementClient({
                                     <p className="text-lg font-bold">
                                       {formatCurrency(expense.amount, expense.currency || event.currency)}
                                     </p>
-                                    {event.status === "open" && (
+                                    {event.status === "open" && event.owner_id === currentUserId && (
                                       <button
                                         onClick={() => handleDeleteExpense(expense.id)}
                                         className="text-red-600 hover:text-red-700 text-sm"
