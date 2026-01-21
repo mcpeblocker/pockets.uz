@@ -20,7 +20,8 @@ export async function scanReceipt(
   try {
     console.log('Creating Tesseract worker...');
     
-    // Create and initialize worker
+    // Create worker with language directly (v5+ API)
+    // Language is passed directly to createWorker, no need for loadLanguage/initialize
     worker = await createWorker('eng', 1, {
       logger: (m) => {
         console.log('Tesseract log:', m.status, m.progress);
@@ -30,11 +31,7 @@ export async function scanReceipt(
       },
     });
 
-    console.log('Worker created, loading language...');
-    await worker.loadLanguage('eng');
-    console.log('Language loaded, initializing...');
-    await worker.initialize('eng');
-    console.log('Worker initialized, starting recognition...');
+    console.log('Worker created and initialized, starting recognition...');
 
     // Perform OCR
     const { data: { text } } = await worker.recognize(imageFile);
