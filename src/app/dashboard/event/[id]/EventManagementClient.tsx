@@ -1459,7 +1459,7 @@ export default function EventManagementClient({
                       </button>
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           )}
