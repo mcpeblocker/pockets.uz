@@ -1305,7 +1305,7 @@ export default function EventManagementClient({
                   </button>
                 </div>
 
-                {!scannedData ? (
+                {!scannedData && !scanningReceipt ? (
                   <div className="space-y-6">
                     <div>
                       <label htmlFor="receiptFile" className="block text-sm font-medium mb-2">
@@ -1321,22 +1321,23 @@ export default function EventManagementClient({
 
                           setScanningReceipt(true);
                           setScanProgress(0);
+                          setScannedData(null);
 
                           try {
-                            console.log('Starting OCR scan for file:', file.name);
+                            console.log('Starting OCR scan for file:', file.name, 'Size:', file.size);
                             const data = await scanReceipt(file, (progress) => {
+                              console.log('OCR progress:', Math.round(progress * 100) + '%');
                               setScanProgress(progress);
                             });
 
                             console.log('OCR scan completed successfully:', data);
+                            console.log('Setting scannedData state...');
                             setScannedData(data);
                             setScanningReceipt(false);
+                            console.log('State updated. scannedData should now be:', data);
                           } catch (error) {
                             console.error('OCR scan error:', error);
-                            setExpenseStatus("error");
-                            setExpenseMessage(
-                              error instanceof Error ? error.message : "Failed to scan receipt"
-                            );
+                            alert(`Error scanning receipt: ${error instanceof Error ? error.message : 'Unknown error'}`);
                             setScanningReceipt(false);
                             setScannedData(null);
                           }
@@ -1346,26 +1347,29 @@ export default function EventManagementClient({
                       />
                     </div>
 
-                    {scanningReceipt && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Scanning receipt...</span>
-                          <span>{Math.round(scanProgress * 100)}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${scanProgress * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Upload a clear photo of your receipt. We'll extract the amount, date, and merchant information automatically.
                     </p>
                   </div>
-                ) : (
+                ) : scanningReceipt ? (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>Scanning receipt...</span>
+                        <span>{Math.round(scanProgress * 100)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${scanProgress * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                      Processing image... This may take a few moments.
+                    </p>
+                  </div>
+                ) : scannedData ? (
                   <div className="space-y-6">
                     <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                       <p className="text-green-800 dark:text-green-200 font-medium mb-2">
