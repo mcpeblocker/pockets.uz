@@ -1,4 +1,4 @@
-import Tesseract from 'tesseract.js';
+import { createWorker } from 'tesseract.js';
 
 export interface ExtractedReceiptData {
   amount: number | null;
@@ -15,14 +15,35 @@ export async function scanReceipt(
   imageFile: File,
   onProgress?: (progress: number) => void
 ): Promise<ExtractedReceiptData> {
+  let worker = null;
+  
   try {
-    const { data: { text } } = await Tesseract.recognize(imageFile, 'eng', {
+    console.log('Creating Tesseract worker...');
+    
+    // Create and initialize worker
+    worker = await createWorker('eng', 1, {
       logger: (m) => {
+        console.log('Tesseract log:', m.status, m.progress);
         if (m.status === 'recognizing text' && onProgress) {
-          onProgress(m.progress);
+          onProgress(m.progress || 0);
         }
       },
     });
+
+    console.log('Worker created, loading language...');
+    await worker.loadLanguage('eng');
+    console.log('Language loaded, initializing...');
+    await worker.initialize('eng');
+    console.log('Worker initialized, starting recognition...');
+
+    // Perform OCR
+    const { data: { text } } = await worker.recognize(imageFile);
+    
+    console.log('OCR completed, extracted text length:', text.length);
+
+    // Clean up worker
+    await worker.terminate();
+    worker = null;
 
     const extractedData = parseReceiptText(text);
 
@@ -32,6 +53,24 @@ export async function scanReceipt(
     };
   } catch (error) {
     console.error('OCR Error:', error);
+    
+    // Clean up worker on error
+    if (worker) {
+      try {
+        await worker.terminate();
+      } catch (terminateError) {
+        console.error('Error terminating worker:', terminateError);
+      }
+    }
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('worker')) {
+        throw new Error('Failed to initialize OCR. Please refresh the page and try again.');
+      }
+      throw new Error(`OCR Error: ${error.message}`);
+    }
+    
     throw new Error('Failed to scan receipt. Please try again or enter manually.');
   }
 }
