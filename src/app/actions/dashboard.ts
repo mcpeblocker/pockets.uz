@@ -451,6 +451,114 @@ export async function addExpense(formData: FormData) {
   return { success: true, expense };
 }
 
+// Bulk expense creation from receipt items
+export async function addBulkExpenses(
+  eventId: string,
+  items: Array<{ description: string; amount: number | null }>,
+  paidByParticipantId: string,
+  expenseDate: string | null,
+  splitType: "equal" | "custom" | "none" = "none",
+  splitParticipants: string[] = []
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "You must be signed in" };
+  }
+
+  // Check permissions
+  const permissions = await checkEventPermissions(eventId, user.id);
+  if (!permissions.canAddExpenses) {
+    return { error: "You don't have permission to add expenses to this event" };
+  }
+
+  // Get event
+  const { data: event } = await supabase
+    .from("events")
+    .select("status, currency, slug")
+    .eq("id", eventId)
+    .single();
+
+  if (!event) {
+    return { error: "Event not found" };
+  }
+
+  if (event.status === "closed") {
+    return { error: "Cannot add expenses to closed events" };
+  }
+
+  const results = [];
+  const errors = [];
+
+  // Create each expense
+  for (const item of items) {
+    if (!item.description || !item.amount || item.amount <= 0) {
+      errors.push(`Skipped "${item.description || 'Unknown'}": Invalid amount`);
+      continue;
+    }
+
+    // Create expense
+    const { data: expense, error: expenseError } = await supabase
+      .from("expenses")
+      .insert({
+        event_id: eventId,
+        description: item.description,
+        amount: item.amount,
+        currency: event.currency || "USD",
+        paid_by_participant_id: paidByParticipantId,
+        expense_date: expenseDate || null,
+        created_by: user.id,
+      })
+      .select()
+      .single();
+
+    if (expenseError || !expense) {
+      errors.push(`Failed to create expense for "${item.description}"`);
+      continue;
+    }
+
+    // Handle splits
+    if (splitType === "equal" && splitParticipants.length > 0) {
+      const splitAmount = item.amount / splitParticipants.length;
+      const splitRecords = splitParticipants.map((participantId: string) => ({
+        expense_id: expense.id,
+        participant_id: participantId,
+        amount: splitAmount,
+        percentage: null,
+      }));
+
+      await supabase.from("expense_splits").insert(splitRecords);
+    } else if (splitType === "none") {
+      // Personal expense - create split for payer only
+      await supabase.from("expense_splits").insert({
+        expense_id: expense.id,
+        participant_id: paidByParticipantId,
+        amount: item.amount,
+        percentage: null,
+      });
+    }
+
+    results.push(expense);
+  }
+
+  await logEventAction(supabase, eventId, "bulk_expenses_added", user.id, null, {
+    count: results.length,
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/event/${eventId}`);
+  revalidatePath(`/event/${event.slug}`);
+
+  return {
+    success: results.length > 0,
+    created: results.length,
+    errors: errors.length > 0 ? errors : undefined,
+  };
+}
+
 // V2: New function to update expenses
 export async function updateExpense(expenseId: string, formData: FormData) {
   const supabase = await createClient();

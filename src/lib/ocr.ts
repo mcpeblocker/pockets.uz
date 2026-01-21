@@ -1,10 +1,16 @@
 import { createWorker } from 'tesseract.js';
 
+export interface ReceiptItem {
+  description: string;
+  amount: number | null;
+  quantity?: number | null;
+}
+
 export interface ExtractedReceiptData {
   amount: number | null;
   date: string | null;
   merchant: string | null;
-  items: string[];
+  items: ReceiptItem[];
   rawText: string;
   detectedLanguage?: string;
 }
@@ -99,8 +105,8 @@ export async function scanReceipt(
 /**
  * Parse OCR text to extract expense information
  */
-function parseReceiptText(text: string): Omit<ExtractedReceiptData, 'rawText'> {
-  const result: Omit<ExtractedReceiptData, 'rawText'> = {
+function parseReceiptText(text: string): Omit<ExtractedReceiptData, 'rawText' | 'detectedLanguage'> {
+  const result: Omit<ExtractedReceiptData, 'rawText' | 'detectedLanguage'> = {
     amount: null,
     date: null,
     merchant: null,
@@ -175,11 +181,11 @@ function parseReceiptText(text: string): Omit<ExtractedReceiptData, 'rawText'> {
     }
   }
 
-  // Extract items (lines that look like product descriptions)
-  lines.forEach(line => {
+  // Extract items with prices (lines that look like product descriptions with amounts)
+  lines.forEach((line, index) => {
     // Skip lines that are clearly not items
     if (
-      line.match(/^(total|subtotal|tax|date|receipt|thank|change|cash|card|visa|mastercard)/i) ||
+      line.match(/^(total|subtotal|tax|date|receipt|thank|change|cash|card|visa|mastercard|итого|сумма|합계|jami)/i) ||
       line.match(/^\$?[\d,]+\.?\d*$/) ||
       line.length < 3 ||
       line.length > 100
@@ -187,14 +193,55 @@ function parseReceiptText(text: string): Omit<ExtractedReceiptData, 'rawText'> {
       return;
     }
     
-    // If line looks like an item (has text and possibly a price)
-    if (line.match(/[a-zA-Z]{3,}/) && line.length > 5) {
-      result.items.push(line);
+    // Try to extract item with price
+    // Pattern: description followed by price (e.g., "Item Name $10.99" or "Item Name 10.99")
+    const pricePatterns = [
+      /(.+?)\s+[\$€£¥₽₩]\s*([\d,]+\.?\d*)/,  // Description $Amount
+      /(.+?)\s+([\d,]+\.\d{2})\s*$/,         // Description Amount.XX
+      /(.+?)\s+([\d,]+)\s*[\$€£¥₽₩]/,        // Description Amount $
+    ];
+    
+    let itemDescription = line;
+    let itemAmount: number | null = null;
+    
+    // Try to find price in the line
+    for (const pattern of pricePatterns) {
+      const match = line.match(pattern);
+      if (match && match[1] && match[2]) {
+        itemDescription = match[1].trim();
+        const cleaned = match[2].replace(/[^0-9.]/g, '');
+        const amount = parseFloat(cleaned);
+        if (!isNaN(amount) && amount > 0 && amount < 100000) {
+          itemAmount = amount;
+          break;
+        }
+      }
+    }
+    
+    // If no price found, check if next line is a price
+    if (!itemAmount && index < lines.length - 1) {
+      const nextLine = lines[index + 1];
+      const priceMatch = nextLine.match(/[\$€£¥₽₩]?\s*([\d,]+\.?\d{2})/);
+      if (priceMatch) {
+        const cleaned = priceMatch[1].replace(/[^0-9.]/g, '');
+        const amount = parseFloat(cleaned);
+        if (!isNaN(amount) && amount > 0 && amount < 100000) {
+          itemAmount = amount;
+        }
+      }
+    }
+    
+    // If line looks like an item (has text)
+    if (itemDescription.match(/[a-zA-ZА-Яа-я가-힣]{3,}/) && itemDescription.length > 3) {
+      result.items.push({
+        description: itemDescription,
+        amount: itemAmount,
+      });
     }
   });
 
-  // Limit items to first 10
-  result.items = result.items.slice(0, 10);
+  // Limit items to first 20
+  result.items = result.items.slice(0, 20);
 
   return result;
 }

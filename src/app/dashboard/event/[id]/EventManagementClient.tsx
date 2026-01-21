@@ -4,6 +4,7 @@ import { Fragment, useState, useEffect } from "react";
 import { Event, Participant, Expense, Settlement } from "@/lib/types";
 import {
   addExpense,
+  addBulkExpenses,
   updateExpense,
   deleteExpense,
   updatePaymentStatus,
@@ -45,6 +46,8 @@ export default function EventManagementClient({
   const [scanningReceipt, setScanningReceipt] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [scannedData, setScannedData] = useState<ExtractedReceiptData | null>(null);
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+  const [importingItems, setImportingItems] = useState(false);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [showEmailNote, setShowEmailNote] = useState(false);
   const [showQRCode, setShowQRCode] = useState(initialShowQR);
@@ -1411,12 +1414,58 @@ export default function EventManagementClient({
 
                       {scannedData.items.length > 0 && (
                         <div>
-                          <label className="block text-sm font-medium mb-1">Items Found</label>
-                          <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400">
-                            {scannedData.items.slice(0, 5).map((item, i) => (
-                              <li key={i}>{item}</li>
+                          <div className="flex items-center justify-between mb-3">
+                            <label className="block text-sm font-medium">Items Found</label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (selectedItems.size === scannedData.items.length) {
+                                  setSelectedItems(new Set());
+                                } else {
+                                  setSelectedItems(new Set(scannedData.items.map((_, i) => i)));
+                                }
+                              }}
+                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              {selectedItems.size === scannedData.items.length ? 'Deselect All' : 'Select All'}
+                            </button>
+                          </div>
+                          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 max-h-60 overflow-y-auto">
+                            {scannedData.items.map((item, i) => (
+                              <div key={i} className="flex items-center gap-3 py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedItems.has(i)}
+                                  onChange={(e) => {
+                                    const newSelected = new Set(selectedItems);
+                                    if (e.target.checked) {
+                                      newSelected.add(i);
+                                    } else {
+                                      newSelected.delete(i);
+                                    }
+                                    setSelectedItems(newSelected);
+                                  }}
+                                  disabled={!item.amount || item.amount <= 0}
+                                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                />
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium">{item.description}</div>
+                                  {item.amount ? (
+                                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                                      {formatCurrency(item.amount, event.currency)}
+                                    </div>
+                                  ) : (
+                                    <div className="text-xs text-yellow-600 dark:text-yellow-400">
+                                      Price not detected
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             ))}
-                          </ul>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            {selectedItems.size} of {scannedData.items.length} items selected
+                          </p>
                         </div>
                       )}
 
@@ -1430,42 +1479,110 @@ export default function EventManagementClient({
                       </details>
                     </div>
 
-                    <div className="flex gap-3 pt-4">
-                      <button
-                        onClick={() => {
-                          // Pre-fill the expense form with scanned data
-                          if (scannedData.amount) {
-                            const amountInput = document.getElementById('amount') as HTMLInputElement;
-                            if (amountInput) amountInput.value = scannedData.amount.toString();
-                          }
+                    <div className="flex flex-col gap-3 pt-4">
+                      {scannedData.items.length > 0 && selectedItems.size > 0 ? (
+                        <>
+                          <button
+                            onClick={async () => {
+                              if (selectedItems.size === 0) {
+                                alert('Please select at least one item to import');
+                                return;
+                              }
 
-                          if (scannedData.date) {
-                            setExpenseDate(scannedData.date);
-                          }
+                              // Get current user's participant ID
+                              const currentUserParticipant = participants.find(p => p.user_id === currentUserId);
+                              if (!currentUserParticipant) {
+                                alert('You must be a participant to add expenses');
+                                return;
+                              }
 
-                          const descriptionInput = document.getElementById('description') as HTMLInputElement;
-                          if (descriptionInput && scannedData.merchant) {
-                            descriptionInput.value = scannedData.merchant;
-                          }
+                              setImportingItems(true);
+                              
+                              try {
+                                const itemsToImport = Array.from(selectedItems)
+                                  .map(i => scannedData.items[i])
+                                  .filter(item => item.amount && item.amount > 0);
 
-                          // Close scan modal and open expense form
-                          setShowScanReceipt(false);
-                          setScannedData(null);
-                          setShowAddExpense(true);
-                        }}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg"
-                      >
-                        Use This Data
-                      </button>
-                      <button
-                        onClick={() => {
-                          setScannedData(null);
-                          setScanProgress(0);
-                        }}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                      >
-                        Scan Another
-                      </button>
+                                if (itemsToImport.length === 0) {
+                                  alert('No valid items selected (items must have a price)');
+                                  setImportingItems(false);
+                                  return;
+                                }
+
+                                const result = await addBulkExpenses(
+                                  event.id,
+                                  itemsToImport,
+                                  currentUserParticipant.id,
+                                  scannedData.date || new Date().toISOString().split('T')[0],
+                                  'none' // Personal expenses by default
+                                );
+
+                                if (result.error) {
+                                  alert(`Error: ${result.error}`);
+                                } else {
+                                  alert(`Successfully imported ${result.created} expense(s)!`);
+                                  setShowScanReceipt(false);
+                                  setScannedData(null);
+                                  setSelectedItems(new Set());
+                                  window.location.reload();
+                                }
+                              } catch (error) {
+                                console.error('Error importing items:', error);
+                                alert('Failed to import items. Please try again.');
+                              } finally {
+                                setImportingItems(false);
+                              }
+                            }}
+                            disabled={importingItems || selectedItems.size === 0}
+                            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-lg"
+                          >
+                            {importingItems ? 'Importing...' : `Import ${selectedItems.size} Selected Item${selectedItems.size !== 1 ? 's' : ''}`}
+                          </button>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                            Items will be imported as separate expenses
+                          </div>
+                        </>
+                      ) : null}
+                      
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => {
+                            // Pre-fill the expense form with scanned data (for single expense)
+                            if (scannedData.amount) {
+                              const amountInput = document.getElementById('amount') as HTMLInputElement;
+                              if (amountInput) amountInput.value = scannedData.amount.toString();
+                            }
+
+                            if (scannedData.date) {
+                              setExpenseDate(scannedData.date);
+                            }
+
+                            const descriptionInput = document.getElementById('description') as HTMLInputElement;
+                            if (descriptionInput && scannedData.merchant) {
+                              descriptionInput.value = scannedData.merchant;
+                            }
+
+                            // Close scan modal and open expense form
+                            setShowScanReceipt(false);
+                            setScannedData(null);
+                            setSelectedItems(new Set());
+                            setShowAddExpense(true);
+                          }}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg"
+                        >
+                          Add as Single Expense
+                        </button>
+                        <button
+                          onClick={() => {
+                            setScannedData(null);
+                            setSelectedItems(new Set());
+                            setScanProgress(0);
+                          }}
+                          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
+                          Scan Another
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : null}
