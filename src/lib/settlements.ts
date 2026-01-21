@@ -74,9 +74,13 @@ export function calculateBalances(
             (participantOwed[split.participant_id] || 0) + amount;
         }
       });
+    } else {
+      // Personal expense (no splits): payer paid for themselves
+      // To balance it out, the payer also "owes" the full amount to themselves
+      // This ensures balance = paid - owed = amount - amount = 0
+      participantOwed[expense.paid_by_participant_id] = 
+        (participantOwed[expense.paid_by_participant_id] || 0) + expense.amount;
     }
-    // Bug Fix #1 & #5: If no splits exist for an expense, it's treated as a personal expense
-    // (payer paid, but no one owes anything) - do nothing, don't fall back to equal split
   });
 
   // Calculate final balances (positive = owed money, negative = owes money)
