@@ -712,19 +712,20 @@ export default function EventManagementClient({
 
           {/* Add Expense Buttons - Visible to all participants when event is open */}
           {event.status === "open" && participants.length > 0 && (
-            <div className="mb-6 flex gap-3">
+            <div className="mb-6">
               <button
                 onClick={() => setShowAddExpense(true)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg"
               >
                 Add Expense
               </button>
-              <button
+              {/* Scan Receipt button temporarily disabled */}
+              {/* <button
                 onClick={() => setShowScanReceipt(true)}
                 className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2"
               >
                 📷 Scan Receipt
-              </button>
+              </button> */}
             </div>
           )}
 
