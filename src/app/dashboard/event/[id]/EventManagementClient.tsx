@@ -58,7 +58,7 @@ export default function EventManagementClient({
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [expensePhotos, setExpensePhotos] = useState<File[]>([]);
   const [splitEnabled, setSplitEnabled] = useState(true);
-  const [splitType, setSplitType] = useState<"equal" | "custom">("equal");
+  const [splitType, setSplitType] = useState<"equal" | "custom" | "none">("equal");
   const [participantAmounts, setParticipantAmounts] = useState<Record<string, number>>({});
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [participantStatus, setParticipantStatus] = useState<
