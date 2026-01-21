@@ -87,7 +87,7 @@ function parseReceiptText(text: string): Omit<ExtractedReceiptData, 'rawText'> {
 
   // Extract amount (look for currency patterns)
   const amountPatterns = [
-    /(?:total|amount|sum|balance|due|paid|grand\s+total)[\s:]*\$?([\d,]+\.?\d*)/i,
+    /(?:total|amount|sum|balance|due|paid|grand\s+total)[\s:]*\$?([\d,]+\.?\d*)/gi,
     /\$([\d,]+\.?\d{2})/g,
     /([\d,]+\.\d{2})/g,
   ];
@@ -95,7 +95,9 @@ function parseReceiptText(text: string): Omit<ExtractedReceiptData, 'rawText'> {
   const foundAmounts: number[] = [];
 
   for (const pattern of amountPatterns) {
-    const matches = text.matchAll(pattern);
+    // Ensure pattern is global for matchAll
+    const globalPattern = pattern.global ? pattern : new RegExp(pattern.source, pattern.flags + 'g');
+    const matches = text.matchAll(globalPattern);
     for (const match of matches) {
       const numStr = match[1] || match[0];
       const cleaned = numStr.replace(/[^0-9.]/g, '');
