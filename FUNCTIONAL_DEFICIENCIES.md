@@ -55,19 +55,20 @@ This document outlines functional deficiencies and inconveniences users might ex
 
 ---
 
-### 4. **No Bulk Operations**
+### 4. **No Bulk Operations** ✅ **PARTIALLY IMPLEMENTED**
 **Scenario**: User wants to add 10 expenses from a grocery receipt. Currently must add each one individually.
 
-**Impact**:
+**Impact**: 
 - Extremely time-consuming
 - Error-prone (repetitive data entry)
 - Poor UX for bulk expense entry
 
 **Missing**:
-- Bulk expense import (CSV/Excel)
-- Multi-select expenses for deletion
-- Bulk participant operations
-- Expense templates
+- ✅ OCR receipt scanning (extracts amount, date, merchant automatically)
+- ⚠️ Bulk expense import (CSV/Excel) - not yet implemented
+- ⚠️ Multi-select expenses for deletion - not yet implemented
+- ⚠️ Bulk participant operations - not yet implemented
+- ⚠️ Expense templates - not yet implemented
 
 ---
 
