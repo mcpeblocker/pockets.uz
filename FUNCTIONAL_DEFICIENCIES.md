@@ -23,18 +23,18 @@ This document outlines functional deficiencies and inconveniences users might ex
 
 ---
 
-### 2. **No Expense Editing UI**
+### 2. **No Expense Editing UI** ✅ **IMPLEMENTED**
 **Scenario**: User accidentally enters wrong amount or selects wrong participant. Currently, there's an `updateExpense` function but no UI to edit expenses.
 
-**Impact**:
+**Impact**: 
 - Users must delete and recreate expenses to fix mistakes
 - Loss of expense history
 - Inconvenient error correction
 
 **Missing**:
-- Edit expense button/modal
-- Edit expense form with pre-filled data
-- Edit history tracking
+- ✅ Edit expense button/modal
+- ✅ Edit expense form with pre-filled data
+- ⚠️ Edit history tracking (audit fields exist but no UI to view history)
 
 ---
 
