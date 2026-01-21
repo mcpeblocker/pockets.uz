@@ -4,6 +4,7 @@ import { Fragment, useState, useEffect } from "react";
 import { Event, Participant, Expense, Settlement } from "@/lib/types";
 import {
   addExpense,
+  updateExpense,
   deleteExpense,
   updatePaymentStatus,
   updateEmailNote,
@@ -37,6 +38,8 @@ export default function EventManagementClient({
 }: EventManagementClientProps) {
   const [activeTab, setActiveTab] = useState<"expenses" | "balances" | "photos">("expenses");
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [showEditExpense, setShowEditExpense] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<typeof expenses[0] | null>(null);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [showEmailNote, setShowEmailNote] = useState(false);
   const [showQRCode, setShowQRCode] = useState(initialShowQR);
@@ -293,6 +296,103 @@ export default function EventManagementClient({
       setParticipantStatus("success");
       setParticipantMessage("Participant added successfully!");
       setShowAddParticipant(false);
+      window.location.reload();
+    }
+  }
+
+  async function handleEditExpense(expense: typeof expenses[0]) {
+    setEditingExpense(expense);
+    // Pre-fill form with expense data
+    setExpenseDate(expense.expense_date || new Date(expense.created_at).toISOString().split('T')[0]);
+    
+    // Handle splits
+    if (expense.splits && expense.splits.length > 0) {
+      const splitAmounts = expense.splits.map((s: any) => s.amount || 0);
+      const isEqual = splitAmounts.length > 1 && splitAmounts.every((amt: number) => Math.abs(amt - splitAmounts[0]) < 0.01);
+      
+      if (isEqual) {
+        setSplitType("equal");
+        setSplitEnabled(true);
+        setSelectedParticipants(expense.splits.map((s: any) => s.participant_id));
+      } else {
+        setSplitType("custom");
+        setSplitEnabled(true);
+        setSelectedParticipants(expense.splits.map((s: any) => s.participant_id));
+        const amounts: Record<string, number> = {};
+        expense.splits.forEach((s: any) => {
+          amounts[s.participant_id] = s.amount || 0;
+        });
+        setParticipantAmounts(amounts);
+      }
+    } else {
+      // No splits - personal expense
+      setSplitType("none");
+      setSplitEnabled(false);
+      setSelectedParticipants([]);
+      setParticipantAmounts({});
+    }
+    
+    setShowEditExpense(true);
+  }
+
+  async function handleUpdateExpense(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editingExpense) return;
+    
+    setExpenseStatus("loading");
+
+    const formData = new FormData(e.currentTarget);
+    
+    // Add date
+    formData.append("expenseDate", expenseDate);
+    
+    // Handle splitting
+    if (splitEnabled) {
+      if (selectedParticipants.length === 0) {
+        setExpenseStatus("error");
+        setExpenseMessage("Please select at least one participant to split the expense among.");
+        return;
+      }
+      
+      if (splitType === "equal") {
+        formData.append("splitParticipants", JSON.stringify(selectedParticipants));
+        formData.append("splitType", "equal");
+      } else {
+        const amount = parseFloat(formData.get("amount") as string);
+        const customSplits = selectedParticipants.map(pid => ({
+          participantId: pid,
+          amount: participantAmounts[pid] || 0
+        }));
+        
+        const totalSplit = customSplits.reduce((sum, s) => sum + s.amount, 0);
+        if (Math.abs(totalSplit - amount) > 0.01) {
+          setExpenseStatus("error");
+          setExpenseMessage(`Split amounts (${totalSplit.toFixed(2)}) must equal expense amount (${amount.toFixed(2)})`);
+          return;
+        }
+        
+        formData.append("splits", JSON.stringify(customSplits));
+        formData.append("splitType", "custom");
+      }
+    } else {
+      formData.append("splitType", "none");
+    }
+    
+    const result = await updateExpense(editingExpense.id, formData);
+
+    if (result.error) {
+      setExpenseStatus("error");
+      setExpenseMessage(result.error);
+    } else {
+      setExpenseStatus("success");
+      setExpenseMessage("Expense updated successfully!");
+      setShowEditExpense(false);
+      setEditingExpense(null);
+      setSelectedParticipants([]);
+      setParticipantAmounts({});
+      setSplitEnabled(true);
+      setSplitType("equal");
+      setExpenseDate(new Date().toISOString().split('T')[0]);
       window.location.reload();
     }
   }
@@ -895,6 +995,286 @@ export default function EventManagementClient({
             </div>
           )}
 
+          {/* Edit Expense Form Modal */}
+          {showEditExpense && editingExpense && event.status === "open" && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-2xl w-full my-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold">Edit Expense</h2>
+                  <button
+                    onClick={() => {
+                      setShowEditExpense(false);
+                      setEditingExpense(null);
+                      setExpenseStatus("idle");
+                      setExpenseMessage("");
+                      setSelectedParticipants([]);
+                      setParticipantAmounts({});
+                      setSplitEnabled(true);
+                      setSplitType("equal");
+                      setExpenseDate(new Date().toISOString().split('T')[0]);
+                    }}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <form onSubmit={handleUpdateExpense} className="space-y-6">
+                  <input type="hidden" name="eventId" value={event.id} />
+
+                  {/* Title */}
+                  <div>
+                    <label htmlFor="edit-description" className="block text-sm font-medium mb-2">
+                      Title *
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        id="edit-description"
+                        name="description"
+                        type="text"
+                        required
+                        defaultValue={editingExpense.description}
+                        placeholder="E.g. Drinks"
+                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                      />
+                      <button
+                        type="button"
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        title="Category"
+                      >
+                        🏷️
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('edit-expensePhotos')?.click()}
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        title="Add Photo"
+                      >
+                        📷
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Amount */}
+                  <div>
+                    <label htmlFor="edit-amount" className="block text-sm font-medium mb-2">
+                      Amount * ({event.currency})
+                    </label>
+                    <input
+                      id="edit-amount"
+                      name="amount"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      defaultValue={editingExpense.amount}
+                      placeholder="0.00"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-lg"
+                    />
+                  </div>
+
+                  {/* Paid By & When */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="edit-paidByParticipantId" className="block text-sm font-medium mb-2">
+                        Paid By *
+                      </label>
+                      <select
+                        id="edit-paidByParticipantId"
+                        name="paidByParticipantId"
+                        required
+                        defaultValue={editingExpense.paid_by_participant_id}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                      >
+                        <option value="">Select participant</option>
+                        {participants.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} {p.user_id === currentUserId ? "(me)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="edit-expenseDate" className="block text-sm font-medium mb-2">
+                        When *
+                      </label>
+                      <input
+                        id="edit-expenseDate"
+                        name="expenseDate"
+                        type="date"
+                        value={expenseDate}
+                        onChange={(e) => setExpenseDate(e.target.value)}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Split Expense */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <input
+                        type="checkbox"
+                        id="edit-splitEnabled"
+                        checked={splitEnabled}
+                        onChange={(e) => {
+                          setSplitEnabled(e.target.checked);
+                          if (!e.target.checked) {
+                            setSelectedParticipants([]);
+                            setParticipantAmounts({});
+                          }
+                        }}
+                        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <label htmlFor="edit-splitEnabled" className="text-sm font-medium">
+                        Split
+                      </label>
+                      {splitEnabled && (
+                        <div className="flex-1 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSplitType("equal")}
+                            className={`px-3 py-1 rounded text-sm ${
+                              splitType === "equal"
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                            }`}
+                          >
+                            Equally
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSplitType("custom")}
+                            className={`px-3 py-1 rounded text-sm ${
+                              splitType === "custom"
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                            }`}
+                            title="Custom Split"
+                          >
+                            ⇄
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {splitEnabled && (
+                      <div className="space-y-2 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        {participants.map((p) => {
+                          const isSelected = selectedParticipants.includes(p.id);
+                          const amount = participantAmounts[p.id] || 0;
+                          const totalAmount = parseFloat((document.getElementById('edit-amount') as HTMLInputElement)?.value || String(editingExpense.amount));
+                          const equalAmount = selectedParticipants.length > 0 && splitType === "equal"
+                            ? totalAmount / selectedParticipants.length
+                            : 0;
+
+                          return (
+                            <div key={p.id} className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedParticipants([...selectedParticipants, p.id]);
+                                    if (splitType === "equal") {
+                                      // Will be calculated on submit
+                                    } else {
+                                      setParticipantAmounts({...participantAmounts, [p.id]: 0});
+                                    }
+                                  } else {
+                                    setSelectedParticipants(selectedParticipants.filter(id => id !== p.id));
+                                    const newAmounts = {...participantAmounts};
+                                    delete newAmounts[p.id];
+                                    setParticipantAmounts(newAmounts);
+                                  }
+                                }}
+                                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <label className="flex-1 text-sm">
+                                {p.name} {p.user_id === currentUserId ? "(me)" : ""}
+                              </label>
+                              {isSelected && (
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={splitType === "equal" ? equalAmount.toFixed(2) : amount}
+                                  onChange={(e) => {
+                                    if (splitType === "custom") {
+                                      setParticipantAmounts({
+                                        ...participantAmounts,
+                                        [p.id]: parseFloat(e.target.value) || 0
+                                      });
+                                    }
+                                  }}
+                                  disabled={splitType === "equal"}
+                                  className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm dark:bg-gray-700"
+                                  placeholder="0.00"
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Hidden file input for editing (new photos can be added) */}
+                  <input
+                    id="edit-expensePhotos"
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        setExpensePhotos(Array.from(e.target.files));
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  {expensePhotos.length > 0 && (
+                    <div className="text-sm text-blue-600 dark:text-blue-400">
+                      {expensePhotos.length} new file(s) selected (will be added to existing receipts)
+                    </div>
+                  )}
+
+                  {expenseStatus === "error" && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-800 dark:text-red-200">
+                      {expenseMessage}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="submit"
+                      disabled={expenseStatus === "loading"}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg"
+                    >
+                      {expenseStatus === "loading" ? "Updating..." : "Update"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEditExpense(false);
+                        setEditingExpense(null);
+                        setExpenseStatus("idle");
+                        setExpenseMessage("");
+                        setSelectedParticipants([]);
+                        setExpensePhotos([]);
+                        setParticipantAmounts({});
+                        setSplitEnabled(true);
+                        setSplitType("equal");
+                        setExpenseDate(new Date().toISOString().split('T')[0]);
+                      }}
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
           {/* Add Participant Form */}
           {showAddParticipant && event.status === "open" && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
@@ -1074,13 +1454,25 @@ export default function EventManagementClient({
                                     <p className="text-lg font-bold">
                                       {formatCurrency(expense.amount, expense.currency || event.currency)}
                                     </p>
-                                    {event.status === "open" && event.owner_id === currentUserId && (
-                                      <button
-                                        onClick={() => handleDeleteExpense(expense.id)}
-                                        className="text-red-600 hover:text-red-700 text-sm"
-                                      >
-                                        Delete
-                                      </button>
+                                    {event.status === "open" && (
+                                      <div className="flex items-center gap-2">
+                                        {(event.owner_id === currentUserId || (expense as any).created_by === currentUserId) && (
+                                          <button
+                                            onClick={() => handleEditExpense(expense)}
+                                            className="text-blue-600 hover:text-blue-700 text-sm"
+                                          >
+                                            Edit
+                                          </button>
+                                        )}
+                                        {event.owner_id === currentUserId && (
+                                          <button
+                                            onClick={() => handleDeleteExpense(expense.id)}
+                                            className="text-red-600 hover:text-red-700 text-sm"
+                                          >
+                                            Delete
+                                          </button>
+                                        )}
+                                      </div>
                                     )}
                                   </div>
                                 </div>
