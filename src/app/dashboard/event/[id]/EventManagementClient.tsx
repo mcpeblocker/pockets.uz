@@ -1323,187 +1323,22 @@ export default function EventManagementClient({
                           setScanProgress(0);
 
                           try {
+                            console.log('Starting OCR scan for file:', file.name);
                             const data = await scanReceipt(file, (progress) => {
                               setScanProgress(progress);
                             });
 
+                            console.log('OCR scan completed successfully:', data);
                             setScannedData(data);
+                            setScanningReceipt(false);
                           } catch (error) {
+                            console.error('OCR scan error:', error);
                             setExpenseStatus("error");
                             setExpenseMessage(
                               error instanceof Error ? error.message : "Failed to scan receipt"
                             );
                             setScanningReceipt(false);
-                          }
-                        }}
-                        disabled={scanningReceipt}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                      />
-                    </div>
-
-                    {scanningReceipt && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Scanning receipt...</span>
-                          <span>{Math.round(scanProgress * 100)}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${scanProgress * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Upload a clear photo of your receipt. We'll extract the amount, date, and merchant information automatically.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                      <p className="text-green-800 dark:text-green-200 font-medium mb-2">
-                        ✓ Receipt scanned successfully!
-                      </p>
-                      <p className="text-sm text-green-600 dark:text-green-400">
-                        Review the extracted information below and click "Use This Data" to pre-fill the expense form.
-                      </p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Amount</label>
-                        <div className="text-lg font-bold">
-                          {scannedData.amount
-                            ? formatCurrency(scannedData.amount, event.currency)
-                            : "Not found"}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Date</label>
-                        <div>{scannedData.date || "Not found"}</div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Merchant</label>
-                        <div>{scannedData.merchant || "Not found"}</div>
-                      </div>
-
-                      {scannedData.items.length > 0 && (
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Items Found</label>
-                          <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400">
-                            {scannedData.items.slice(0, 5).map((item, i) => (
-                              <li key={i}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      <details className="text-sm">
-                        <summary className="cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-                          View raw OCR text
-                        </summary>
-                        <pre className="mt-2 p-3 bg-gray-100 dark:bg-gray-900 rounded text-xs overflow-auto max-h-40">
-                          {scannedData.rawText}
-                        </pre>
-                      </details>
-                    </div>
-
-                    <div className="flex gap-3 pt-4">
-                      <button
-                        onClick={() => {
-                          // Pre-fill the expense form with scanned data
-                          if (scannedData.amount) {
-                            const amountInput = document.getElementById('amount') as HTMLInputElement;
-                            if (amountInput) amountInput.value = scannedData.amount.toString();
-                          }
-
-                          if (scannedData.date) {
-                            setExpenseDate(scannedData.date);
-                          }
-
-                          const descriptionInput = document.getElementById('description') as HTMLInputElement;
-                          if (descriptionInput && scannedData.merchant) {
-                            descriptionInput.value = scannedData.merchant;
-                          }
-
-                          // Close scan modal and open expense form
-                          setShowScanReceipt(false);
-                          setScannedData(null);
-                          setShowAddExpense(true);
-                        }}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg"
-                      >
-                        Use This Data
-                      </button>
-                      <button
-                        onClick={() => {
-                          setScannedData(null);
-                          setScanProgress(0);
-                        }}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                      >
-                        Scan Another
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Scan Receipt Modal */}
-          {showScanReceipt && event.status === "open" && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-2xl w-full my-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold">Scan Receipt</h2>
-                  <button
-                    onClick={() => {
-                      setShowScanReceipt(false);
-                      setScanningReceipt(false);
-                      setScanProgress(0);
-                      setScannedData(null);
-                    }}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {!scannedData ? (
-                  <div className="space-y-6">
-                    <div>
-                      <label htmlFor="receiptFile" className="block text-sm font-medium mb-2">
-                        Upload Receipt Image
-                      </label>
-                      <input
-                        id="receiptFile"
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-
-                          setScanningReceipt(true);
-                          setScanProgress(0);
-
-                          try {
-                            const data = await scanReceipt(file, (progress) => {
-                              setScanProgress(progress);
-                            });
-
-                            setScannedData(data);
-                            setScanningReceipt(false);
-                          } catch (error) {
-                            setExpenseStatus("error");
-                            setExpenseMessage(
-                              error instanceof Error ? error.message : "Failed to scan receipt"
-                            );
-                            setScanningReceipt(false);
+                            setScannedData(null);
                           }
                         }}
                         disabled={scanningReceipt}
