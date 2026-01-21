@@ -40,11 +40,11 @@ export async function scanReceipt(
  * Parse OCR text to extract expense information
  */
 function parseReceiptText(text: string): Omit<ExtractedReceiptData, 'rawText'> {
-  const result = {
-    amount: null as number | null,
-    date: string | null,
-    merchant: string | null,
-    items: [] as string[],
+  const result: Omit<ExtractedReceiptData, 'rawText'> = {
+    amount: null,
+    date: null,
+    merchant: null,
+    items: [],
   };
 
   const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
