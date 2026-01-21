@@ -1400,6 +1400,15 @@ export default function EventManagementClient({
                         <div>{scannedData.merchant || "Not found"}</div>
                       </div>
 
+                      {scannedData.detectedLanguage && (
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Detected Language</label>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {scannedData.detectedLanguage}
+                          </div>
+                        </div>
+                      )}
+
                       {scannedData.items.length > 0 && (
                         <div>
                           <label className="block text-sm font-medium mb-1">Items Found</label>

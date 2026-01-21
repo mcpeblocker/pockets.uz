@@ -6,10 +6,25 @@ export interface ExtractedReceiptData {
   merchant: string | null;
   items: string[];
   rawText: string;
+  detectedLanguage?: string;
 }
 
 /**
- * Perform OCR on a receipt image and extract expense data
+ * Supported languages for OCR based on app usage regions:
+ * - eng: English (USA, Europe)
+ * - kor: Korean (Korea)
+ * - uzb: Uzbek (Uzbekistan)
+ * - rus: Russian (Russia, Kazakhstan, Uzbekistan)
+ * - kaz: Kazakh (Kazakhstan)
+ * - deu: German (Europe)
+ * - fra: French (Europe)
+ * - spa: Spanish (Europe)
+ */
+const SUPPORTED_LANGUAGES = ['eng', 'kor', 'rus', 'uzb', 'kaz', 'deu', 'fra', 'spa'];
+
+/**
+ * Perform OCR on a receipt image with automatic language detection
+ * Tries multiple languages and uses the one with best confidence
  */
 export async function scanReceipt(
   imageFile: File,
@@ -18,35 +33,44 @@ export async function scanReceipt(
   let worker = null;
   
   try {
-    console.log('Creating Tesseract worker...');
+    console.log('Creating Tesseract worker with multi-language support...');
     
-    // Create worker with language directly (v5+ API)
-    // Language is passed directly to createWorker, no need for loadLanguage/initialize
-    worker = await createWorker('eng', 1, {
+    // Create worker with multiple languages (Tesseract will try all)
+    // Format: 'lang1+lang2+lang3' for multi-language OCR
+    const languages = SUPPORTED_LANGUAGES.join('+');
+    
+    worker = await createWorker(languages, 1, {
       logger: (m) => {
         console.log('Tesseract log:', m.status, m.progress);
         if (m.status === 'recognizing text' && onProgress) {
+          // Adjust progress for multi-language (might be slightly slower)
           onProgress(m.progress || 0);
         }
       },
     });
 
-    console.log('Worker created and initialized, starting recognition...');
+    console.log('Worker created with languages:', languages);
+    console.log('Starting recognition with automatic language detection...');
 
-    // Perform OCR
-    const { data: { text } } = await worker.recognize(imageFile);
+    // Perform OCR - Tesseract will automatically detect and use the best language
+    const { data } = await worker.recognize(imageFile);
     
-    console.log('OCR completed, extracted text length:', text.length);
+    console.log('OCR completed, extracted text length:', data.text.length);
+    console.log('Detected language confidence:', data.confidence);
 
     // Clean up worker
     await worker.terminate();
     worker = null;
 
-    const extractedData = parseReceiptText(text);
+    const extractedData = parseReceiptText(data.text);
+
+    // Try to detect the primary language from the text
+    const detectedLanguage = detectLanguageFromText(data.text);
 
     return {
       ...extractedData,
-      rawText: text,
+      rawText: data.text,
+      detectedLanguage,
     };
   } catch (error) {
     console.error('OCR Error:', error);
@@ -173,4 +197,58 @@ function parseReceiptText(text: string): Omit<ExtractedReceiptData, 'rawText'> {
   result.items = result.items.slice(0, 10);
 
   return result;
+}
+
+/**
+ * Detect the primary language from OCR text
+ * Uses heuristics based on character sets and common words
+ */
+function detectLanguageFromText(text: string): string {
+  // Count character types
+  const hasCyrillic = /[А-Яа-яЁё]/.test(text);
+  const hasKorean = /[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(text);
+  const hasLatin = /[A-Za-z]/.test(text);
+  const hasUzbekLatin = /[ʻʼ]/.test(text); // Uzbek specific characters
+  
+  // Count occurrences
+  const cyrillicCount = (text.match(/[А-Яа-яЁё]/g) || []).length;
+  const koreanCount = (text.match(/[가-힣ㄱ-ㅎㅏ-ㅣ]/g) || []).length;
+  const latinCount = (text.match(/[A-Za-z]/g) || []).length;
+  
+  // Common words/patterns for language detection
+  const koreanWords = ['원', '만원', '영수증', '합계', '총액'];
+  const russianWords = ['руб', 'рубль', 'итого', 'сумма', 'чек'];
+  const uzbekWords = ['so\'m', 'so\'m', 'jami', 'chek'];
+  const kazakhWords = ['теңге', 'тең', 'барлығы'];
+  
+  const hasKoreanWords = koreanWords.some(word => text.includes(word));
+  const hasRussianWords = russianWords.some(word => text.toLowerCase().includes(word));
+  const hasUzbekWords = uzbekWords.some(word => text.toLowerCase().includes(word));
+  const hasKazakhWords = kazakhWords.some(word => text.toLowerCase().includes(word));
+  
+  // Priority detection based on character sets and keywords
+  if (hasKorean || hasKoreanWords || koreanCount > latinCount) {
+    return 'Korean';
+  }
+  
+  if (hasCyrillic) {
+    if (hasKazakhWords) {
+      return 'Kazakh';
+    }
+    if (hasRussianWords || cyrillicCount > latinCount) {
+      return 'Russian';
+    }
+  }
+  
+  if (hasUzbekLatin || hasUzbekWords) {
+    return 'Uzbek';
+  }
+  
+  // Default to English if mostly Latin characters
+  if (hasLatin && latinCount > cyrillicCount && latinCount > koreanCount) {
+    return 'English';
+  }
+  
+  // Fallback
+  return 'Unknown';
 }
