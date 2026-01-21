@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Turbopack config for Next.js 16
+  turbopack: {},
+  // Webpack config for production builds (when not using Turbopack)
   webpack: (config, { isServer }) => {
     // Fix for Tesseract.js worker files
     if (!isServer) {
