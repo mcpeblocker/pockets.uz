@@ -53,12 +53,14 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-        <h1 className="text-3xl font-bold mb-2 text-center">Create Account</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
-          Create an account to manage your events and groups
-        </p>
+    <div className="min-h-screen flex items-center justify-center p-8 bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Create Account</h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Create an account to manage your events and groups
+          </p>
+        </div>
 
         {status === 'success' ? (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-green-800 dark:text-green-200">
@@ -76,7 +78,7 @@ export default function SignUpPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 transition-all duration-200"
               />
             </div>
 
@@ -91,7 +93,7 @@ export default function SignUpPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="your@email.com"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 transition-all duration-200"
               />
             </div>
 
@@ -107,7 +109,7 @@ export default function SignUpPage() {
                 required
                 minLength={8}
                 placeholder="At least 8 characters"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 transition-all duration-200"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Must be at least 8 characters
@@ -123,22 +125,22 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={status === 'loading'}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 disabled:from-green-400 disabled:to-blue-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
             >
               {status === 'loading' ? 'Processing...' : 'Create Account'}
             </button>
           </form>
         )}
 
-        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-          <p className="mt-2">
+        <div className="mt-8 text-center space-y-3">
+          <p className="text-gray-600 dark:text-gray-400">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-600 hover:underline">
+            <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold hover:underline transition-colors">
               Sign in
             </Link>
           </p>
-          <Link href="/" className="text-blue-600 hover:underline mt-4 inline-block">
-            Back to Home
+          <Link href="/" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mt-4 inline-block text-sm font-medium transition-colors">
+            ← Back to Home
           </Link>
         </div>
       </div>

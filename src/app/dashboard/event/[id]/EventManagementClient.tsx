@@ -491,7 +491,7 @@ export default function EventManagementClient({
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Back Button */}
           <Link
@@ -502,7 +502,7 @@ export default function EventManagementClient({
           </Link>
 
           {/* Event Header */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8 mb-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h1 className="text-3xl font-bold mb-2">{event.title}</h1>
@@ -631,7 +631,7 @@ export default function EventManagementClient({
           {/* Email Note Modal */}
           {showEmailNote && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-lg w-full">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-lg w-full border border-gray-200 dark:border-gray-700">
                 <h2 className="text-xl font-bold mb-4">Edit Email Note</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   This note will be included in the settlement email sent to
@@ -647,7 +647,7 @@ export default function EventManagementClient({
                 <div className="flex gap-3">
                   <button
                     onClick={handleSaveEmailNote}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
                   >
                     Save
                   </button>
@@ -668,7 +668,7 @@ export default function EventManagementClient({
           {/* QR Code Modal */}
           {showQRCode && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full border border-gray-200 dark:border-gray-700">
                 <h2 className="text-xl font-bold mb-2">Event QR Code</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   Scan this QR code to quickly access the event
@@ -695,7 +695,7 @@ export default function EventManagementClient({
                         navigator.clipboard.writeText(fullUrl).catch(() => {});
                       }
                     }}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
                   >
                     Copy URL
                   </button>
@@ -715,14 +715,14 @@ export default function EventManagementClient({
             <div className="mb-6">
               <button
                 onClick={() => setShowAddExpense(true)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
               >
                 Add Expense
               </button>
               {/* Scan Receipt button temporarily disabled */}
               {/* <button
                 onClick={() => setShowScanReceipt(true)}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2"
+                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
               >
                 📷 Scan Receipt
               </button> */}
@@ -734,7 +734,7 @@ export default function EventManagementClient({
             <div className="mb-6">
               <button
                 onClick={() => setShowAddParticipant(true)}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
               >
                 Add Participant Manually
               </button>
@@ -744,7 +744,7 @@ export default function EventManagementClient({
           {/* Add Expense Form Modal */}
           {showAddExpense && event.status === "open" && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-2xl w-full my-8">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-2xl w-full my-8 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">Add Expense</h2>
                   <button
@@ -984,7 +984,7 @@ export default function EventManagementClient({
                     <button
                       type="submit"
                       disabled={expenseStatus === "loading"}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-blue-400 disabled:to-purple-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
                     >
                       {expenseStatus === "loading" ? "Adding..." : "Add"}
                     </button>
@@ -1013,7 +1013,7 @@ export default function EventManagementClient({
           {/* Edit Expense Form Modal */}
           {showEditExpense && editingExpense && event.status === "open" && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-2xl w-full my-8">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-2xl w-full my-8 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">Edit Expense</h2>
                   <button
@@ -1262,7 +1262,7 @@ export default function EventManagementClient({
                     <button
                       type="submit"
                       disabled={expenseStatus === "loading"}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-blue-400 disabled:to-purple-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
                     >
                       {expenseStatus === "loading" ? "Updating..." : "Update"}
                     </button>
@@ -1293,7 +1293,7 @@ export default function EventManagementClient({
           {/* Scan Receipt Modal */}
           {showScanReceipt && event.status === "open" && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-2xl w-full my-8">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-2xl w-full my-8 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">Scan Receipt</h2>
                   <button
@@ -1535,7 +1535,7 @@ export default function EventManagementClient({
                               }
                             }}
                             disabled={importingItems || selectedItems.size === 0}
-                            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-lg"
+                            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
                           >
                             {importingItems ? 'Importing...' : `Import ${selectedItems.size} Selected Item${selectedItems.size !== 1 ? 's' : ''}`}
                           </button>
@@ -1569,7 +1569,7 @@ export default function EventManagementClient({
                             setSelectedItems(new Set());
                             setShowAddExpense(true);
                           }}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg"
+                          className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
                         >
                           Add as Single Expense
                         </button>
@@ -1593,7 +1593,7 @@ export default function EventManagementClient({
 
           {/* Add Participant Form */}
           {showAddParticipant && event.status === "open" && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8 mb-6 border border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-bold mb-4">Add Participant Manually</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 Add participants who agreed to split but haven't joined via the public link.
@@ -1647,7 +1647,7 @@ export default function EventManagementClient({
                   <button
                     type="submit"
                     disabled={participantStatus === "loading"}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-medium py-2 px-4 rounded-lg"
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-purple-400 disabled:to-pink-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
                   >
                     {participantStatus === "loading" ? "Adding..." : "Add Participant"}
                   </button>
@@ -1909,7 +1909,7 @@ export default function EventManagementClient({
           </div>
 
           {/* Participants */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8 mb-6 border border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold mb-4">Participants</h2>
             {participants.length === 0 ? (
               <p className="text-gray-600 dark:text-gray-400">

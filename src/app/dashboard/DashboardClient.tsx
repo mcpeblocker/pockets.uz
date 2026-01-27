@@ -60,18 +60,18 @@ export default function DashboardClient({ user, events, initialShowCreate = fals
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Welcome back, {user.email}
+              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Dashboard</h1>
+              <p className="text-gray-600 dark:text-gray-400 text-lg">
+                Welcome back, <span className="font-semibold">{user.email}</span>
               </p>
             </div>
             <button
               onClick={() => setShowCreateForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
             >
               Create Event
             </button>
@@ -79,8 +79,9 @@ export default function DashboardClient({ user, events, initialShowCreate = fals
 
           {/* Create Event Form */}
           {showCreateForm && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-              <h2 className="text-xl font-bold mb-4">Create New Event</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 mb-8 border border-gray-200 dark:border-gray-700">
+              <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Create New Event</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">Start tracking expenses for your group</p>
               <form onSubmit={handleCreateSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="title" className="block text-sm font-medium mb-2">
@@ -98,7 +99,7 @@ export default function DashboardClient({ user, events, initialShowCreate = fals
                         slugInput.value = generateSlug(e.target.value);
                       }
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 transition-all duration-200"
                   />
                 </div>
 
@@ -131,7 +132,7 @@ export default function DashboardClient({ user, events, initialShowCreate = fals
                     id="currency"
                     name="currency"
                     defaultValue="USD"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 transition-all duration-200"
                   >
                     {CURRENCIES.map((currency) => (
                       <option key={currency.code} value={currency.code}>
@@ -150,7 +151,7 @@ export default function DashboardClient({ user, events, initialShowCreate = fals
                     name="description"
                     rows={3}
                     placeholder="A brief description of the event..."
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 transition-all duration-200"
                   />
                 </div>
 
@@ -170,7 +171,7 @@ export default function DashboardClient({ user, events, initialShowCreate = fals
                   <button
                     type="submit"
                     disabled={createStatus === 'loading'}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-blue-400 disabled:to-purple-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
                   >
                     {createStatus === 'loading' ? 'Creating...' : 'Create Event'}
                   </button>
@@ -181,7 +182,7 @@ export default function DashboardClient({ user, events, initialShowCreate = fals
                       setCreateStatus('idle');
                       setCreateMessage('');
                     }}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                   >
                     Cancel
                   </button>
@@ -192,15 +193,16 @@ export default function DashboardClient({ user, events, initialShowCreate = fals
 
           {/* Events List */}
           <div>
-            <h2 className="text-2xl font-bold mb-4">Your Events</h2>
+            <h2 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Your Events</h2>
             {events.length === 0 ? (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-12 text-center border border-gray-200 dark:border-gray-700">
+                <div className="text-6xl mb-4">📊</div>
+                <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg">
                   You haven&apos;t created any events yet.
                 </p>
                 <button
                   onClick={() => setShowCreateForm(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
                 >
                   Create Your First Event
                 </button>
@@ -213,7 +215,7 @@ export default function DashboardClient({ user, events, initialShowCreate = fals
                     <Link
                       key={event.id}
                       href={`/dashboard/event/${event.id}`}
-                      className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow"
+                      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-1 border border-gray-200 dark:border-gray-700"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <h3 className="text-lg font-bold">{event.title}</h3>

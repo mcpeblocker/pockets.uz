@@ -149,10 +149,10 @@ export default function EventPageClient({
     <>
       <Header />
       <HelpButton />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-8">
         <div className="max-w-4xl mx-auto">
           {/* Event Header */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8 mb-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h1 className="text-3xl font-bold mb-2">{event.title}</h1>
@@ -185,7 +185,7 @@ export default function EventPageClient({
 
           {/* Payment Statistics */}
           {participants.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8 mb-6 border border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-bold mb-4">Payment Tracking</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
@@ -222,7 +222,7 @@ export default function EventPageClient({
 
           {/* Payment Statistics for Closed Events */}
           {event.status === 'closed' && settlements.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8 mb-6 border border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-bold mb-4">Settlement Status</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
@@ -258,7 +258,7 @@ export default function EventPageClient({
             <div className="mb-6">
               <button
                 onClick={handleCancelJoin}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                className="w-full bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
               >
                 Leave This Event
               </button>
@@ -268,7 +268,7 @@ export default function EventPageClient({
           {/* Join Button for Authenticated Users */}
           {event.status === 'open' && !myParticipantId && currentUser && (
             <div className="mb-6">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8 border border-gray-200 dark:border-gray-700">
                 <h2 className="text-xl font-bold mb-4">Join Event</h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Join as <strong>{currentUser.name}</strong> ({currentUser.email})
@@ -283,7 +283,7 @@ export default function EventPageClient({
                 <button
                   onClick={handleQuickJoin}
                   disabled={joinStatus === 'loading'}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-blue-400 disabled:to-purple-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
                 >
                   {joinStatus === 'loading' ? 'Joining...' : 'Join This Event'}
                 </button>
@@ -296,7 +296,7 @@ export default function EventPageClient({
             <div className="mb-6">
               <button
                 onClick={() => setShowJoinForm(true)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
               >
                 Join This Event
               </button>
@@ -305,7 +305,7 @@ export default function EventPageClient({
 
           {/* Join Form for Non-Authenticated Users */}
           {showJoinForm && event.status === 'open' && !currentUser && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8 mb-6 border border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-bold mb-4">Join Event</h2>
               <form onSubmit={handleJoinSubmit} className="space-y-4">
                 <input type="hidden" name="eventId" value={event.id} />
@@ -542,7 +542,7 @@ export default function EventPageClient({
           </div>
 
           {/* Participants */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8 mb-6 border border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold mb-4">Participants</h2>
             {participants.length === 0 ? (
               <p className="text-gray-600 dark:text-gray-400">No participants yet.</p>

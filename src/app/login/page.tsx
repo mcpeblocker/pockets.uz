@@ -33,12 +33,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-        <h1 className="text-3xl font-bold mb-2 text-center">Sign In</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
-          Sign in to manage your events and groups
-        </p>
+    <div className="min-h-screen flex items-center justify-center p-8 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Sign In</h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Sign in to manage your events and groups
+          </p>
+        </div>
 
         {status === 'success' ? (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-green-800 dark:text-green-200">
@@ -57,7 +59,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="your@email.com"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 transition-all duration-200"
               />
             </div>
 
@@ -72,7 +74,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="Enter your password"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 transition-all duration-200"
               />
             </div>
 
@@ -85,15 +87,15 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={status === 'loading'}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-blue-400 disabled:to-purple-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
             >
               {status === 'loading' ? 'Processing...' : 'Sign In'}
             </button>
           </form>
         )}
 
-        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-          <p className="mt-2">
+        <div className="mt-8 text-center space-y-3">
+          <p>
             <button
               onClick={async () => {
                 if (!email) {
@@ -114,19 +116,19 @@ export default function LoginPage() {
                   setMessage('Password reset email sent! Check your inbox.');
                 }
               }}
-              className="text-blue-600 hover:underline text-sm"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm transition-colors"
             >
               Forgot password?
             </button>
           </p>
-          <p className="mt-2">
+          <p className="text-gray-600 dark:text-gray-400">
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-blue-600 hover:underline">
+            <Link href="/signup" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold hover:underline transition-colors">
               Sign up
             </Link>
           </p>
-          <Link href="/" className="text-blue-600 hover:underline mt-4 inline-block">
-            Back to Home
+          <Link href="/" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mt-4 inline-block text-sm font-medium transition-colors">
+            ← Back to Home
           </Link>
         </div>
       </div>
