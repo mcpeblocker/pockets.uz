@@ -1,16 +1,16 @@
 services:
-  dev-web:
+  web:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: pockets-dev-web
+    container_name: ${CONTAINER_NAME:-pockets-web}
     env_file:
       - .env
     networks:
       - default
     restart: unless-stopped
     ports:
-      - "3003:3000"
+      - "${HOST_PORT:-3000}:3000"
 
 networks:
   default:

@@ -1,9 +1,9 @@
-name: Deploy to Dev Environment
+name: Deploy to Prod Environment
 
 on:
   push:
     branches:
-      - v2
+      - main
 
 jobs:
   build-and-deploy:
@@ -17,9 +17,9 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ secrets.DEPLOY_PATH_DEV }}
+            cd ${{ secrets.DEPLOY_PATH_PROD }}
   
-            git pull origin v2
+            git pull origin main
             
             # Restart services
             docker compose down
@@ -27,8 +27,8 @@ jobs:
             
             sleep 15
             
-            if curl -f http://localhost:3003 > /dev/null 2>&1; then
-              echo -e "\e[32m==> Health check passed! Deployment to Development server successful.\e[0m"
+            if curl -f http://localhost:3005 > /dev/null 2>&1; then
+              echo -e "\e[32m==> Health check passed! Deployment to Production server successful.\e[0m"
             else
               # Print in red color
               echo -e "\e[31m==> Health check failed!\e[0m"
