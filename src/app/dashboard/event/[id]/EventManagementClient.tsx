@@ -48,6 +48,7 @@ export default function EventManagementClient({
   const [scannedData, setScannedData] = useState<ExtractedReceiptData | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [importingItems, setImportingItems] = useState(false);
+  const [showOCRTeaser, setShowOCRTeaser] = useState(false);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [showEmailNote, setShowEmailNote] = useState(false);
   const [showQRCode, setShowQRCode] = useState(initialShowQR);
@@ -712,20 +713,41 @@ export default function EventManagementClient({
 
           {/* Add Expense Buttons - Visible to all participants when event is open */}
           {event.status === "open" && participants.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-6 space-y-3">
               <button
                 onClick={() => setShowAddExpense(true)}
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
               >
                 Add Expense
               </button>
-              {/* Scan Receipt button temporarily disabled */}
-              {/* <button
-                onClick={() => setShowScanReceipt(true)}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+              
+              {/* OCR Scanner Teaser */}
+              <div 
+                onClick={() => setShowOCRTeaser(true)}
+                className="relative w-full bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-purple-900/20 border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-lg p-4 cursor-pointer hover:border-purple-400 dark:hover:border-purple-600 transition-all duration-200 group"
               >
-                📷 Scan Receipt
-              </button> */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white text-xl shadow-md group-hover:scale-110 transition-transform duration-200">
+                      📷
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">Smart Receipt Scanner</h3>
+                        <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded-full shadow-sm">
+                          COMING SOON
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                        Snap a photo, auto-extract expenses • Multi-language support
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-purple-500 dark:text-purple-400 group-hover:translate-x-1 transition-transform duration-200">
+                    →
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1587,6 +1609,53 @@ export default function EventManagementClient({
                     </div>
                   </div>
                 ) : null}
+              </div>
+            </div>
+          )}
+
+          {/* OCR Teaser Modal */}
+          {showOCRTeaser && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-lg w-full border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    Smart Receipt Scanner (Coming Soon)
+                  </h2>
+                  <button
+                    onClick={() => setShowOCRTeaser(false)}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <p className="text-gray-700 dark:text-gray-200">
+                    We&apos;re working on a new way to add expenses in seconds.
+                    Just snap a photo of a receipt and let Pockets do the typing
+                    for you.
+                  </p>
+                  <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                    <li>• Automatically read totals and dates from receipts</li>
+                    <li>• Detect languages from everyday life: Korean, Uzbek, Russian, Kazakh, English and more</li>
+                    <li>• Turn long restaurant bills into multiple expenses with one scan</li>
+                  </ul>
+                  <div className="rounded-lg bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 p-4 text-sm text-purple-900 dark:text-purple-100">
+                    <strong className="block mb-1">Not enabled yet</strong>
+                    <span>
+                      We&apos;re still tuning the accuracy before turning this
+                      on for real events. For now, please continue adding
+                      expenses manually.
+                    </span>
+                  </div>
+                  <div className="flex justify-end mt-2">
+                    <button
+                      onClick={() => setShowOCRTeaser(false)}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                    >
+                      Sounds good
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
