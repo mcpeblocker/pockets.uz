@@ -1,20 +1,36 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { User } from '@supabase/supabase-js';
-import { Event } from '@/lib/types';
-import { createEvent } from '@/app/actions/dashboard';
-import { CURRENCIES } from '@/lib/currency';
-import Header from '@/components/Header';
-import Link from 'next/link';
+import { useState, useEffect } from "react";
+import { createEvent } from "@/app/actions/dashboard";
+import Header from "@/components/Header";
+import Link from "next/link";
+import { CURRENCIES } from "@/lib/currency";
+
+type DashboardUser = {
+  id: string;
+  email: string;
+};
+
+type DashboardEvent = {
+  id: string;
+  slug: string;
+  title: string;
+  description?: string | null;
+  status: "open" | "closed";
+  owner_id: string;
+};
 
 interface DashboardClientProps {
-  user: User;
-  events: Event[];
+  user: DashboardUser;
+  events: DashboardEvent[];
   initialShowCreate?: boolean;
 }
 
-export default function DashboardClient({ user, events, initialShowCreate = false }: DashboardClientProps) {
+export default function DashboardClient({
+  user,
+  events,
+  initialShowCreate = false,
+}: DashboardClientProps) {
   const [showCreateForm, setShowCreateForm] = useState(initialShowCreate);
   const [createStatus, setCreateStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [createMessage, setCreateMessage] = useState('');

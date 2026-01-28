@@ -1,0 +1,29 @@
+{
+  "name": "pockets-backend",
+  "version": "1.0.0",
+  "description": "Backend API server for Pockets expense tracking app",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "migrate": "node src/db/migrate.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "nodemailer": "^7.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.10.6"
+  }
+}

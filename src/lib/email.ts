@@ -80,9 +80,8 @@ export async function sendVerificationEmail(email: string, name: string | null, 
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #2563eb; margin-bottom: 20px;">Welcome to Pockets! 🎉</h1>
         <p>Hi ${userName},</p>
-        <p>Thank you for signing up for Pockets! To complete your registration and start managing your shared expenses, please verify your email address.</p>
-        <p><strong>You should have received a verification email from Supabase with a verification link.</strong> Please check your inbox (and spam folder) for an email with the subject "Confirm your signup".</p>
-        <p>Click the link in that email to verify your account.</p>
+        <p>Thank you for signing up for Pockets! To complete your registration and start managing your shared expenses, please verify your email address using the verification link we sent you.</p>
+        <p>Please check your inbox (and spam folder) for an email from Pockets with a verification link.</p>
         <p style="margin: 30px 0; text-align: center;">
           <a href="${siteUrl}/login" style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">
             Go to Sign In

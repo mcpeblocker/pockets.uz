@@ -1,31 +1,29 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase-client';
-import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from '@/app/actions/auth';
 
 export default function Header() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const pathname = usePathname();
-  const supabase = createClient();
   const isAuthPage = pathname === '/login' || pathname === '/signup';
 
   useEffect(() => {
-    // Get initial user
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+    let cancelled = false;
+    fetch("/api/session", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (!cancelled) setUser(j.user || null);
+      })
+      .catch(() => {
+        if (!cancelled) setUser(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <header className="border-b border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm sticky top-0 z-30 shadow-md">
@@ -41,7 +39,7 @@ export default function Header() {
                 Dashboard
               </Link>
               <span className="hidden sm:inline text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate max-w-[150px] px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                {user.email}
+                {user.email || user.name}
               </span>
               <form action={signOut}>
                 <button 

@@ -24,19 +24,12 @@ export default function SignUpPage() {
     formData.append('name', name);
 
     try {
-      console.log('🔄 Starting signup process...');
       const result = await signUpWithPassword(formData);
-      
-      console.log('📥 Signup result:', result);
-      
+
       if (result.error) {
-        console.error('❌ Signup error:', result.error);
-        console.error('❌ Full result object:', JSON.stringify(result, null, 2));
         setStatus('error');
-        // Show the full error message with all details
         setMessage(result.error);
       } else {
-        console.log('✅ Signup successful!');
         setStatus('success');
         if (result.message) {
           setMessage(result.message);
@@ -46,7 +39,6 @@ export default function SignUpPage() {
         }
       }
     } catch (error) {
-      console.error('❌ Unexpected error during signup:', error);
       setStatus('error');
       setMessage(`Unexpected error: ${error instanceof Error ? error.message : String(error)}`);
     }

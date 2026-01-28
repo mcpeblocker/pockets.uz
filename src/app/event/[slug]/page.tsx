@@ -35,7 +35,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
       participants={participants}
       expenses={expenses}
       settlements={settlements}
-      currentUser={user ? { id: user.id, email: user.email || '', name: user.user_metadata?.name || user.email?.split('@')[0] || '' } : null}
+      currentUser={user ? { id: user.id, email: user.email || '', name: user.name || user.email?.split('@')[0] || '' } : null}
       userParticipantId={userParticipant?.id || null}
     />
   );

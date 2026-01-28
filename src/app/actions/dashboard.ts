@@ -1,830 +1,181 @@
 "use server";
 
-import { createClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { calculateSettlements, validateExpenseSplits } from "@/lib/settlements";
-import { sendSettlementEmail } from "@/lib/email";
-import { ensureUserExists } from "@/lib/user-sync";
-import { ExpenseFormData } from "@/lib/types";
-import { checkEventPermissions, canEditExpense, canDeleteExpense } from "@/lib/permissions";
-import { updateDeviceSession } from "@/lib/device-session";
+import { apiFetch } from "@/lib/backend-api";
 
-// Helper to log event history
-async function logEventAction(
-  supabase: any,
-  eventId: string,
-  action: string,
-  userId: string | null,
-  participantId: string | null = null,
-  details: Record<string, any> | null = null,
-) {
-  await supabase.rpc("log_event_action", {
-    p_event_id: eventId,
-    p_action: action,
-    p_user_id: userId,
-    p_participant_id: participantId,
-    p_details: details,
-  });
-}
+// -------- Events --------
 
 export async function createEvent(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "You must be signed in to create events" };
-  }
-
-  // Ensure user exists in the database
-  const syncResult = await ensureUserExists(user.id, user.email);
-  if (syncResult.error) {
-    console.error("Failed to sync user:", syncResult.error);
-    return { error: "Failed to sync user account. Please try again." };
-  }
-
-  // Update device session
-  await updateDeviceSession(user.id);
-
-  const title = formData.get("title") as string;
-  const description = formData.get("description") as string;
-  const slug = formData.get("slug") as string;
-  const currency = (formData.get("currency") as string) || "USD";
-  const groupId = formData.get("groupId") as string | null; // V3: Optional group
+  const title = (formData.get("title") as string | null)?.trim() || "";
+  const slug = (formData.get("slug") as string | null)?.trim() || "";
+  const description = (formData.get("description") as string | null)?.trim() || "";
+  const currency = (formData.get("currency") as string | null)?.trim() || "USD";
 
   if (!title || !slug) {
     return { error: "Title and slug are required" };
   }
 
-  // Validate slug format
   if (!/^[a-z0-9-]+$/.test(slug)) {
     return {
       error: "Slug can only contain lowercase letters, numbers, and hyphens",
     };
   }
 
-  // Check if slug is already taken
-  const { data: existing } = await supabase
-    .from("events")
-    .select("id")
-    .eq("slug", slug)
-    .single();
-
-  if (existing) {
-    return { error: "This slug is already taken. Please choose another." };
-  }
-
-  // V3: If group_id provided, verify user has access
-  if (groupId) {
-    const { data: group } = await supabase
-      .from("groups")
-      .select("owner_id")
-      .eq("id", groupId)
-      .single();
-
-    if (!group) {
-      return { error: "Group not found" };
-    }
-
-    // Check if user is owner or member
-    if (group.owner_id !== user.id) {
-      const { data: member } = await supabase
-        .from("group_members")
-        .select("id")
-        .eq("group_id", groupId)
-        .eq("user_id", user.id)
-        .single();
-
-      if (!member) {
-        return { error: "You don't have access to this group" };
-      }
-    }
-  }
-
-  const { data: event, error } = await supabase
-    .from("events")
-    .insert({
-      title,
-      description: description || null,
-      slug,
-      owner_id: user.id,
-      group_id: groupId || null, // V3: Link to group if provided
-      status: "open",
-      currency,
-      created_by: user.id, // V3: Audit field
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error creating event:", error);
-    return { error: "Failed to create event" };
-  }
-
-  // Auto-add owner as participant
-  const { data: ownerParticipant, error: participantError } = await supabase
-    .from("participants")
-    .insert({
-      event_id: event.id,
-      user_id: user.id,
-      name: user.user_metadata?.name || user.email?.split("@")[0] || "Event Owner",
-      email: user.email || null,
-      payment_status: "pending",
-      created_by: user.id,
-    })
-    .select()
-    .single();
-
-  if (participantError) {
-    console.error("Error adding owner as participant:", participantError);
-    // Don't fail event creation if participant creation fails
-    // The owner can still manage the event
-  }
-
-  await logEventAction(supabase, event.id, "event_created", user.id, ownerParticipant?.id || null, {
-    title,
-    slug,
+  const { data, error, status } = await apiFetch<any>("/api/events", {
+    method: "POST",
+    auth: true,
+    body: JSON.stringify({ title, slug, description, currency }),
   });
 
+  if (error) {
+    if (status === 401 || status === 403) {
+      return { error: "You have to sign in before creating an event." };
+    }
+    return { error };
+  }
+
   revalidatePath("/dashboard");
-  return { success: true, event };
+  return { success: true, event: data };
 }
 
 export async function getUserEvents() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data, error } = await apiFetch<any[]>("/api/events", { auth: true });
 
-  if (!user) {
+  if (error) {
+    console.error("Error fetching events from backend:", error);
     return [];
   }
 
-  // Get events where user is the owner
-  const { data: ownedEvents, error: ownedError } = await supabase
-    .from("events")
-    .select("*")
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false });
-
-  if (ownedError) {
-    console.error("Error fetching owned events:", ownedError);
-  }
-
-  // Get events where user is a participant (but not owner)
-  const { data: participantRecords, error: participantError } = await supabase
-    .from("participants")
-    .select("event_id")
-    .eq("user_id", user.id);
-
-  if (participantError) {
-    console.error("Error fetching participant events:", participantError);
-  }
-
-  const participantEventIds = (participantRecords || [])
-    .map((p) => p.event_id)
-    .filter((id) => !ownedEvents?.some((e) => e.id === id)); // Exclude already owned events
-
-  let participatedEvents: any[] = [];
-  if (participantEventIds.length > 0) {
-    const { data: pEvents, error: pEventsError } = await supabase
-      .from("events")
-      .select("*")
-      .in("id", participantEventIds)
-      .order("created_at", { ascending: false });
-
-    if (pEventsError) {
-      console.error("Error fetching participated events:", pEventsError);
-    } else {
-      participatedEvents = pEvents || [];
-    }
-  }
-
-  // Combine and sort by created_at
-  const allEvents = [...(ownedEvents || []), ...participatedEvents].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
-
-  return allEvents;
+  return data || [];
 }
 
-// V2: Enhanced expense creation with custom splits and categories
+// -------- Expenses --------
+
 export async function addExpense(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "You must be signed in" };
-  }
-
   const eventId = formData.get("eventId") as string;
   const description = formData.get("description") as string;
-  const amount = parseFloat(formData.get("amount") as string);
+  const amount = formData.get("amount") as string;
   const paidByParticipantId = formData.get("paidByParticipantId") as string;
-  const expenseDate = formData.get("expenseDate") as string | null;
-  const categoryId = formData.get("categoryId") as string | null;
+  const expenseDate = (formData.get("expenseDate") as string) || null;
+  const currency = (formData.get("currency") as string) || undefined;
   const splitType = (formData.get("splitType") as string) || "equal";
-  const expenseCurrency = (formData.get("currency") as string) || null;
-  
-  // Get selected participants for splitting
-  const splitParticipantsJson = formData.get("splitParticipants") as string;
-  let splitParticipants: string[] = [];
-  if (splitParticipantsJson) {
-    try {
-      splitParticipants = JSON.parse(splitParticipantsJson);
-    } catch (e) {
-      console.error("Error parsing splitParticipants:", e);
-    }
-  }
+  const splitParticipants = formData.get("splitParticipants") as string | null;
+  const splits = formData.get("splits") as string | null;
 
   if (!eventId || !description || !amount || !paidByParticipantId) {
     return { error: "All required fields are missing" };
   }
 
-  if (amount <= 0) {
-    return { error: "Amount must be greater than 0" };
-  }
-
-  // Update device session
-  await updateDeviceSession(user.id);
-
-  // Check permissions
-  const permissions = await checkEventPermissions(eventId, user.id);
-  if (!permissions.canAddExpenses) {
-    return { error: "You don't have permission to add expenses to this event" };
-  }
-
-  // Get event for status and currency check
-  const { data: event } = await supabase
-    .from("events")
-    .select("status, currency, slug")
-    .eq("id", eventId)
-    .single();
-
-  if (!event) {
-    return { error: "Event not found" };
-  }
-
-  // Check if this is the first expense or get existing expenses to calculate dominant currency
-  const { data: existingExpenses } = await supabase
-    .from("expenses")
-    .select("currency")
-    .eq("event_id", eventId);
-
-  const isFirstExpense = !existingExpenses || existingExpenses.length === 0;
-  const finalCurrency = expenseCurrency || event.currency;
-
-  if (event.status === "closed") {
-    return {
-      error:
-        "Cannot add expenses to closed events. Please reopen the event first.",
-    };
-  }
-
-  // Check if participant exists
-  const { data: participant } = await supabase
-    .from("participants")
-    .select("id")
-    .eq("id", paidByParticipantId)
-    .eq("event_id", eventId)
-    .single();
-
-  if (!participant) {
-    return { error: "Invalid participant" };
-  }
-
-  // Create expense with audit fields
-  const { data: expense, error: expenseError } = await supabase
-    .from("expenses")
-    .insert({
-      event_id: eventId,
-      description,
-      amount,
-      paid_by_participant_id: paidByParticipantId,
-      expense_date: expenseDate || null,
-      category_id: categoryId || null,
-      currency: expenseCurrency || event.currency,
-      created_by: user.id,
-    })
-    .select()
-    .single();
-
-  if (expenseError) {
-    console.error("Error adding expense:", expenseError);
-    return { error: "Failed to add expense" };
-  }
-
-  // Handle expense splits - use selected participants or custom splits
-  // Bug Fix #1 & #5: For personal expenses (splitType="none"), don't create splits
-  // Balance calculation will treat expenses without splits as personal expenses
-  if (splitType === "none") {
-    // Personal expense - only payer is involved, no one owes anything
-    // Don't create any splits - balance calculation will handle this correctly
-    // (expenses without splits are treated as personal)
-  } else if (splitParticipants.length > 0 && splitType === "equal") {
-    // Equal split among selected participants
-    // Bug Fix #8: Server-side validation for empty participant list
-    if (splitParticipants.length === 0) {
-      await supabase.from("expenses").delete().eq("id", expense.id);
-      return { error: "At least one participant must be selected for splitting" };
-    }
-    
-    const splitAmount = amount / splitParticipants.length;
-    const splitRecords = splitParticipants.map((participantId: string) => ({
-      expense_id: expense.id,
-      participant_id: participantId,
-      amount: splitAmount,
-      percentage: null,
-    }));
-
-    const { error: splitsError } = await supabase
-      .from("expense_splits")
-      .insert(splitRecords);
-
-    if (splitsError) {
-      console.error("Error adding expense splits:", splitsError);
-      await supabase.from("expenses").delete().eq("id", expense.id);
-      return { error: "Failed to add expense splits" };
-    }
-  } else if (splitType === "custom") {
-    // Custom splits
-    const splitsJson = formData.get("splits") as string;
-    if (!splitsJson) {
-      await supabase.from("expenses").delete().eq("id", expense.id);
-      return { error: "Custom splits data is required" };
-    }
-    
-    try {
-      const splits = JSON.parse(splitsJson);
-
-      // Validate splits
-      const validation = validateExpenseSplits(amount, splits);
-      if (!validation.valid) {
-        // Delete the expense we just created
-        await supabase.from("expenses").delete().eq("id", expense.id);
-        return { error: validation.error || "Invalid expense splits" };
-      }
-
-      // Create splits
-      const splitRecords = splits.map((split: any) => ({
-        expense_id: expense.id,
-        participant_id: split.participantId,
-        amount: split.amount !== undefined ? split.amount : null,
-        percentage: split.percentage !== undefined ? split.percentage : null,
-      }));
-
-      const { error: splitsError } = await supabase
-        .from("expense_splits")
-        .insert(splitRecords);
-
-      if (splitsError) {
-        console.error("Error adding expense splits:", splitsError);
-        await supabase.from("expenses").delete().eq("id", expense.id);
-        return { error: "Failed to add expense splits" };
-      }
-    } catch (e) {
-      await supabase.from("expenses").delete().eq("id", expense.id);
-      return { error: "Invalid splits data" };
-    }
-  } else {
-    // Fallback: if no split type specified but split is enabled, treat as equal split
-    // This shouldn't happen with proper client validation, but handle it gracefully
-    await supabase.from("expenses").delete().eq("id", expense.id);
-    return { error: "Invalid split configuration" };
-  }
-
-  // Update event currency if needed
-  if (isFirstExpense && finalCurrency && finalCurrency !== event.currency) {
-    // First expense: set event currency to match expense currency
-    await supabase
-      .from("events")
-      .update({ currency: finalCurrency })
-      .eq("id", eventId);
-  } else if (!isFirstExpense && existingExpenses) {
-    // Calculate dominant currency (most used currency)
-    const currencyCounts: Record<string, number> = {};
-    existingExpenses.forEach((e: any) => {
-      const curr = e.currency || event.currency;
-      currencyCounts[curr] = (currencyCounts[curr] || 0) + 1;
-    });
-    
-    // Add the new expense currency
-    currencyCounts[finalCurrency] = (currencyCounts[finalCurrency] || 0) + 1;
-    
-    // Find the currency with the highest count
-    let dominantCurrency = event.currency;
-    let maxCount = 0;
-    Object.entries(currencyCounts).forEach(([curr, count]) => {
-      if (count > maxCount) {
-        maxCount = count;
-        dominantCurrency = curr;
-      }
-    });
-    
-    // Update event currency if dominant currency is different
-    if (dominantCurrency !== event.currency) {
-      await supabase
-        .from("events")
-        .update({ currency: dominantCurrency })
-        .eq("id", eventId);
-    }
-  }
-
-  // Note: Photo uploads are handled client-side via API route
-  // The photoCount and photo files are passed but will be uploaded separately
-  // This is because File objects in FormData don't work well in server actions
-  // The client should upload photos after expense is created
-
-  await logEventAction(supabase, eventId, "expense_added", user.id, null, {
-    expense_id: expense.id,
+  const body: any = {
+    eventId,
     description,
     amount,
+    paidByParticipantId,
+    expenseDate,
+    currency,
+    splitType,
+  };
+
+  if (splitParticipants) body.splitParticipants = splitParticipants;
+  if (splits) body.splits = splits;
+
+  const { data, error } = await apiFetch<any>("/api/expenses", {
+    method: "POST",
+    auth: true,
+    body: JSON.stringify(body),
   });
+
+  if (error) return { error };
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/event/${eventId}`);
-  revalidatePath(`/event/${event.slug}`);
-  return { success: true, expense };
+  revalidatePath(`/event/${body.slug ?? ""}`);
+
+  return { success: true, expense: data };
 }
 
-// Bulk expense creation from receipt items
 export async function addBulkExpenses(
   eventId: string,
   items: Array<{ description: string; amount: number | null }>,
   paidByParticipantId: string,
   expenseDate: string | null,
   splitType: "equal" | "custom" | "none" = "none",
-  splitParticipants: string[] = []
+  splitParticipants: string[] = [],
 ) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "You must be signed in" };
-  }
-
-  // Check permissions
-  const permissions = await checkEventPermissions(eventId, user.id);
-  if (!permissions.canAddExpenses) {
-    return { error: "You don't have permission to add expenses to this event" };
-  }
-
-  // Get event
-  const { data: event } = await supabase
-    .from("events")
-    .select("status, currency, slug")
-    .eq("id", eventId)
-    .single();
-
-  if (!event) {
-    return { error: "Event not found" };
-  }
-
-  if (event.status === "closed") {
-    return { error: "Cannot add expenses to closed events" };
-  }
-
-  const results = [];
-  const errors = [];
-
-  // Create each expense
-  for (const item of items) {
-    if (!item.description || !item.amount || item.amount <= 0) {
-      errors.push(`Skipped "${item.description || 'Unknown'}": Invalid amount`);
-      continue;
-    }
-
-    // Create expense
-    const { data: expense, error: expenseError } = await supabase
-      .from("expenses")
-      .insert({
-        event_id: eventId,
-        description: item.description,
-        amount: item.amount,
-        currency: event.currency || "USD",
-        paid_by_participant_id: paidByParticipantId,
-        expense_date: expenseDate || null,
-        created_by: user.id,
-      })
-      .select()
-      .single();
-
-    if (expenseError || !expense) {
-      errors.push(`Failed to create expense for "${item.description}"`);
-      continue;
-    }
-
-    // Handle splits
-    if (splitType === "equal" && splitParticipants.length > 0) {
-      const splitAmount = item.amount / splitParticipants.length;
-      const splitRecords = splitParticipants.map((participantId: string) => ({
-        expense_id: expense.id,
-        participant_id: participantId,
-        amount: splitAmount,
-        percentage: null,
-      }));
-
-      await supabase.from("expense_splits").insert(splitRecords);
-    } else if (splitType === "none") {
-      // Personal expense - create split for payer only
-      await supabase.from("expense_splits").insert({
-        expense_id: expense.id,
-        participant_id: paidByParticipantId,
-        amount: item.amount,
-        percentage: null,
-      });
-    }
-
-    results.push(expense);
-  }
-
-  await logEventAction(supabase, eventId, "bulk_expenses_added", user.id, null, {
-    count: results.length,
+  const { data, error } = await apiFetch<any>("/api/expenses/bulk", {
+    method: "POST",
+    auth: true,
+    body: JSON.stringify({
+      eventId,
+      items,
+      paidByParticipantId,
+      expenseDate,
+      splitType,
+      splitParticipants,
+    }),
   });
+
+  if (error) return { error };
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/event/${eventId}`);
-  revalidatePath(`/event/${event.slug}`);
-
-  return {
-    success: results.length > 0,
-    created: results.length,
-    errors: errors.length > 0 ? errors : undefined,
-  };
+  return { success: true, ...data };
 }
 
-// V2: New function to update expenses
 export async function updateExpense(expenseId: string, formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "You must be signed in" };
-  }
-
   const eventId = formData.get("eventId") as string;
   const description = formData.get("description") as string;
-  const amount = parseFloat(formData.get("amount") as string);
+  const amount = formData.get("amount") as string;
   const paidByParticipantId = formData.get("paidByParticipantId") as string;
-  const expenseDate = formData.get("expenseDate") as string | null;
-  const categoryId = formData.get("categoryId") as string | null;
+  const expenseDate = (formData.get("expenseDate") as string) || null;
+  const currency = (formData.get("currency") as string) || undefined;
   const splitType = (formData.get("splitType") as string) || "equal";
+  const splitParticipants = formData.get("splitParticipants") as string | null;
+  const splits = formData.get("splits") as string | null;
 
-  if (!eventId || !description || !amount || !paidByParticipantId) {
-    return { error: "All required fields are missing" };
-  }
-
-  if (amount <= 0) {
-    return { error: "Amount must be greater than 0" };
-  }
-
-  // Update device session
-  await updateDeviceSession(user.id);
-
-  // Check permissions
-  const canEdit = await canEditExpense(expenseId, user.id);
-  if (!canEdit) {
-    return { error: "You don't have permission to edit this expense" };
-  }
-
-  // Get event for status check
-  const { data: event } = await supabase
-    .from("events")
-    .select("status, slug")
-    .eq("id", eventId)
-    .single();
-
-  if (!event) {
-    return { error: "Event not found" };
-  }
-
-  if (event.status === "closed") {
-    return {
-      error:
-        "Cannot update expenses in closed events. Please reopen the event first.",
-    };
-  }
-
-  // Update expense (updated_by and version set by trigger)
-  const { error: updateError } = await supabase
-    .from("expenses")
-    .update({
-      description,
-      amount,
-      paid_by_participant_id: paidByParticipantId,
-      expense_date: expenseDate || null,
-      category_id: categoryId || null,
-    })
-    .eq("id", expenseId);
-
-  if (updateError) {
-    console.error("Error updating expense:", updateError);
-    return { error: "Failed to update expense" };
-  }
-
-  // Bug Fix #3 & #9: Delete existing splits and recreate based on split type
-  await supabase.from("expense_splits").delete().eq("expense_id", expenseId);
-
-  // Get split participants for equal split
-  const splitParticipantsJson = formData.get("splitParticipants") as string;
-  let splitParticipants: string[] = [];
-  if (splitParticipantsJson) {
-    try {
-      splitParticipants = JSON.parse(splitParticipantsJson);
-    } catch (e) {
-      console.error("Error parsing splitParticipants for update:", e);
-    }
-  }
-
-  if (splitType === "none") {
-    // Personal expense - don't create any splits
-    // Balance calculation will treat expenses without splits as personal
-  } else if (splitType === "equal" && splitParticipants.length > 0) {
-    // Equal split among selected participants
-    const splitAmount = amount / splitParticipants.length;
-    const splitRecords = splitParticipants.map((participantId: string) => ({
-      expense_id: expenseId,
-      participant_id: participantId,
-      amount: splitAmount,
-      percentage: null,
-    }));
-
-    const { error: splitsError } = await supabase
-      .from("expense_splits")
-      .insert(splitRecords);
-
-    if (splitsError) {
-      console.error("Error updating expense splits (equal):", splitsError);
-      return { error: "Failed to update expense splits" };
-    }
-  } else if (splitType === "custom") {
-    const splitsJson = formData.get("splits") as string;
-    if (!splitsJson) {
-      return { error: "Custom splits data is required" };
-    }
-    
-    try {
-      const splits = JSON.parse(splitsJson);
-
-      // Validate splits
-      const validation = validateExpenseSplits(amount, splits);
-      if (!validation.valid) {
-        return { error: validation.error || "Invalid expense splits" };
-      }
-
-      // Create splits
-      const splitRecords = splits.map((split: any) => ({
-        expense_id: expenseId,
-        participant_id: split.participantId,
-        amount: split.amount !== undefined ? split.amount : null,
-        percentage: split.percentage !== undefined ? split.percentage : null,
-      }));
-
-      const { error: splitsError } = await supabase
-        .from("expense_splits")
-        .insert(splitRecords);
-
-      if (splitsError) {
-        console.error("Error updating expense splits (custom):", splitsError);
-        return { error: "Failed to update expense splits" };
-      }
-    } catch (e) {
-      return { error: "Invalid splits data" };
-    }
-  }
-
-  await logEventAction(supabase, eventId, "expense_updated", user.id, null, {
-    expense_id: expenseId,
+  const body: any = {
     description,
     amount,
+    paidByParticipantId,
+    expenseDate,
+    currency,
+    splitType,
+  };
+  if (splitParticipants) body.splitParticipants = splitParticipants;
+  if (splits) body.splits = splits;
+
+  const { error } = await apiFetch(`/api/expenses/${expenseId}`, {
+    method: "PUT",
+    auth: true,
+    body: JSON.stringify(body),
   });
 
+  if (error) return { error };
+
   revalidatePath("/dashboard");
-  revalidatePath(`/dashboard/event/${eventId}`);
-  revalidatePath(`/event/${event.slug}`);
+  if (eventId) {
+    revalidatePath(`/dashboard/event/${eventId}`);
+  }
   return { success: true };
 }
 
 export async function deleteExpense(expenseId: string, eventId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
-
-  // Update device session
-  await updateDeviceSession(user.id);
-
-  // Check permissions
-  const canDelete = await canDeleteExpense(expenseId, user.id);
-  if (!canDelete) {
-    return { error: "You don't have permission to delete this expense" };
-  }
-
-  // Get event for status check
-  const { data: event } = await supabase
-    .from("events")
-    .select("status, slug")
-    .eq("id", eventId)
-    .single();
-
-  if (!event) {
-    return { error: "Event not found" };
-  }
-
-  if (event.status === "closed") {
-    return {
-      error:
-        "Cannot delete expenses from closed events. Please reopen the event first.",
-    };
-  }
-
-  const { error } = await supabase
-    .from("expenses")
-    .delete()
-    .eq("id", expenseId);
-
-  if (error) {
-    console.error("Error deleting expense:", error);
-    return { error: "Failed to delete expense" };
-  }
-
-  // Bug Fix #7: Check if all expenses are deleted and revert currency to default
-  const { data: remainingExpenses } = await supabase
-    .from("expenses")
-    .select("currency")
-    .eq("event_id", eventId);
-
-  if (!remainingExpenses || remainingExpenses.length === 0) {
-    // All expenses deleted - revert to default currency (USD)
-    await supabase
-      .from("events")
-      .update({ currency: "USD" })
-      .eq("id", eventId);
-  } else {
-    // Recalculate dominant currency from remaining expenses
-    const currencyCounts: Record<string, number> = {};
-    remainingExpenses.forEach((e: any) => {
-      const curr = e.currency || "USD";
-      currencyCounts[curr] = (currencyCounts[curr] || 0) + 1;
-    });
-
-    let dominantCurrency = "USD";
-    let maxCount = 0;
-    Object.entries(currencyCounts).forEach(([curr, count]) => {
-      if (count > maxCount) {
-        maxCount = count;
-        dominantCurrency = curr;
-      }
-    });
-
-    // Get current event currency
-    const { data: currentEvent } = await supabase
-      .from("events")
-      .select("currency")
-      .eq("id", eventId)
-      .single();
-
-    if (currentEvent && currentEvent.currency !== dominantCurrency) {
-      await supabase
-        .from("events")
-        .update({ currency: dominantCurrency })
-        .eq("id", eventId);
-    }
-  }
-
-  await logEventAction(supabase, eventId, "expense_deleted", user.id, null, {
-    expense_id: expenseId,
+  const { error } = await apiFetch(`/api/expenses/${expenseId}`, {
+    method: "DELETE",
+    auth: true,
   });
+
+  if (error) return { error };
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/event/${eventId}`);
-  revalidatePath(`/event/${event.slug}`);
   return { success: true };
 }
 
-// V2: Enhanced participant management with duplicate prevention
+// -------- Participants --------
+
 export async function addParticipant(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
-
   const eventId = formData.get("eventId") as string;
   const name = formData.get("name") as string;
   const email = (formData.get("email") as string) || null;
@@ -833,250 +184,29 @@ export async function addParticipant(formData: FormData) {
     return { error: "Event ID and name are required" };
   }
 
-  // Verify ownership
-  const { data: event } = await supabase
-    .from("events")
-    .select("owner_id, status, slug")
-    .eq("id", eventId)
-    .single();
+  const { data, error } = await apiFetch<any>("/api/participants", {
+    method: "POST",
+    auth: true,
+    body: JSON.stringify({ eventId, name, email }),
+  });
 
-  if (!event || event.owner_id !== user.id) {
-    return { error: "Unauthorized" };
-  }
-
-  if (event.status === "closed") {
-    return {
-      error:
-        "Cannot add participants to closed events. Please reopen the event first.",
-    };
-  }
-
-  // V2: Check for duplicate email in same event
-  if (email) {
-    const { data: existing } = await supabase
-      .from("participants")
-      .select("id, name")
-      .eq("event_id", eventId)
-      .ilike("email", email)
-      .single();
-
-    if (existing) {
-      return {
-        error: `A participant with email ${email} already exists in this event (${existing.name})`,
-      };
-    }
-  }
-
-  const { data: participant, error } = await supabase
-    .from("participants")
-    .insert({
-      event_id: eventId,
-      name,
-      email,
-      payment_status: "pending",
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error adding participant:", error);
-    // Check if it's a duplicate constraint violation
-    if (error.code === "23505") {
-      return {
-        error: "A participant with this email already exists in this event",
-      };
-    }
-    return { error: "Failed to add participant" };
-  }
-
-  await logEventAction(
-    supabase,
-    eventId,
-    "participant_added",
-    user.id,
-    participant.id,
-    {
-      name,
-      email,
-    },
-  );
+  if (error) return { error };
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/event/${eventId}`);
-  revalidatePath(`/event/${event.slug}`);
-  return { success: true, participant };
+  return { success: true, participant: data };
 }
 
-// V2: New function to update participants
-export async function updateParticipant(
-  participantId: string,
-  eventId: string,
-  formData: FormData,
-) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export async function deleteParticipant(participantId: string, eventId: string) {
+  const { error } = await apiFetch(`/api/participants/${participantId}`, {
+    method: "DELETE",
+    auth: true,
+  });
 
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
-
-  // Verify ownership
-  const { data: event } = await supabase
-    .from("events")
-    .select("owner_id, status, slug")
-    .eq("id", eventId)
-    .single();
-
-  if (!event || event.owner_id !== user.id) {
-    return { error: "Unauthorized" };
-  }
-
-  if (event.status === "closed") {
-    return {
-      error:
-        "Cannot update participants in closed events. Please reopen the event first.",
-    };
-  }
-
-  const name = formData.get("name") as string;
-  const email = (formData.get("email") as string) || null;
-
-  if (!name) {
-    return { error: "Name is required" };
-  }
-
-  // V2: Check for duplicate email (excluding current participant)
-  if (email) {
-    const { data: existing } = await supabase
-      .from("participants")
-      .select("id")
-      .eq("event_id", eventId)
-      .ilike("email", email)
-      .neq("id", participantId)
-      .single();
-
-    if (existing) {
-      return {
-        error: "A participant with this email already exists in this event",
-      };
-    }
-  }
-
-  const { error } = await supabase
-    .from("participants")
-    .update({
-      name,
-      email,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", participantId);
-
-  if (error) {
-    console.error("Error updating participant:", error);
-    if (error.code === "23505") {
-      return {
-        error: "A participant with this email already exists in this event",
-      };
-    }
-    return { error: "Failed to update participant" };
-  }
-
-  await logEventAction(
-    supabase,
-    eventId,
-    "participant_updated",
-    user.id,
-    participantId,
-    {
-      name,
-      email,
-    },
-  );
+  if (error) return { error };
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/event/${eventId}`);
-  revalidatePath(`/event/${event.slug}`);
-  return { success: true };
-}
-
-export async function deleteParticipant(
-  participantId: string,
-  eventId: string,
-) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
-
-  // Verify ownership
-  const { data: event } = await supabase
-    .from("events")
-    .select("owner_id, status, slug")
-    .eq("id", eventId)
-    .single();
-
-  if (!event || event.owner_id !== user.id) {
-    return { error: "Unauthorized" };
-  }
-
-  if (event.status === "closed") {
-    return {
-      error:
-        "Cannot remove participants from closed events. Please reopen the event first.",
-    };
-  }
-
-  // Check if participant has any expenses (as payer or in splits)
-  const { data: expenses } = await supabase
-    .from("expenses")
-    .select("id")
-    .eq("paid_by_participant_id", participantId)
-    .limit(1);
-
-  if (expenses && expenses.length > 0) {
-    return { error: "Cannot remove participant who has paid for expenses" };
-  }
-
-  // Check if participant is in any expense splits
-  const { data: splits } = await supabase
-    .from("expense_splits")
-    .select("id")
-    .eq("participant_id", participantId)
-    .limit(1);
-
-  if (splits && splits.length > 0) {
-    return {
-      error: "Cannot remove participant who is included in expense splits",
-    };
-  }
-
-  const { error } = await supabase
-    .from("participants")
-    .delete()
-    .eq("id", participantId);
-
-  if (error) {
-    console.error("Error deleting participant:", error);
-    return { error: "Failed to remove participant" };
-  }
-
-  await logEventAction(
-    supabase,
-    eventId,
-    "participant_removed",
-    user.id,
-    participantId,
-  );
-
-  revalidatePath("/dashboard");
-  revalidatePath(`/dashboard/event/${eventId}`);
-  revalidatePath(`/event/${event.slug}`);
   return { success: true };
 }
 
@@ -1085,350 +215,57 @@ export async function updatePaymentStatus(
   eventId: string,
   status: "pending" | "paid",
 ) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { error } = await apiFetch(`/api/participants/${participantId}/payment-status`, {
+    method: "PATCH",
+    auth: true,
+    body: JSON.stringify({ payment_status: status }),
+  });
 
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
-
-  // Get event and participant info
-  const { data: event } = await supabase
-    .from("events")
-    .select("owner_id, slug")
-    .eq("id", eventId)
-    .single();
-
-  if (!event) {
-    return { error: "Event not found" };
-  }
-
-  // Get participant to check if user is the participant
-  const { data: participant } = await supabase
-    .from("participants")
-    .select("user_id")
-    .eq("id", participantId)
-    .eq("event_id", eventId)
-    .single();
-
-  if (!participant) {
-    return { error: "Participant not found" };
-  }
-
-  // Allow if user is event owner OR if user is the participant themselves
-  const isOwner = event.owner_id === user.id;
-  const isParticipant = participant.user_id === user.id;
-
-  if (!isOwner && !isParticipant) {
-    return { error: "Unauthorized. Only the event owner or the participant themselves can update payment status." };
-  }
-
-  const { error } = await supabase
-    .from("participants")
-    .update({ payment_status: status })
-    .eq("id", participantId);
-
-  if (error) {
-    console.error("Error updating payment status:", error);
-    return { error: "Failed to update payment status" };
-  }
+  if (error) return { error };
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/event/${eventId}`);
-  revalidatePath(`/event/${event.slug}`);
   return { success: true };
 }
+
+// -------- Event email note & status --------
 
 export async function updateEmailNote(eventId: string, emailNote: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { error } = await apiFetch(`/api/events/${eventId}`, {
+    method: "PUT",
+    auth: true,
+    body: JSON.stringify({ email_note: emailNote }),
+  });
 
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
-
-  // Verify ownership
-  const { data: event } = await supabase
-    .from("events")
-    .select("owner_id")
-    .eq("id", eventId)
-    .single();
-
-  if (!event || event.owner_id !== user.id) {
-    return { error: "Unauthorized" };
-  }
-
-  const { error } = await supabase
-    .from("events")
-    .update({ email_note: emailNote })
-    .eq("id", eventId);
-
-  if (error) {
-    console.error("Error updating email note:", error);
-    return { error: "Failed to update email note" };
-  }
-
-  revalidatePath("/dashboard");
-  return { success: true };
-}
-
-// V2: Enhanced close event with better settlement handling
-export async function closeEvent(eventId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
-
-  // Verify ownership and get event details
-  const { data: event } = await supabase
-    .from("events")
-    .select("*, participants(*), expenses(*)")
-    .eq("id", eventId)
-    .single();
-
-  if (!event || event.owner_id !== user.id) {
-    return { error: "Unauthorized" };
-  }
-
-  if (event.status === "closed") {
-    return { error: "Event is already closed" };
-  }
-
-  // Get expense splits for custom splitting
-  const { data: expenseSplits } = await supabase
-    .from("expense_splits")
-    .select("*")
-    .in(
-      "expense_id",
-      event.expenses.map((e: any) => e.id),
-    );
-
-  // Calculate settlements with custom splits support
-  const settlements = calculateSettlements(
-    event.participants,
-    event.expenses,
-    expenseSplits || [],
-  );
-
-  // Delete existing settlements if any (in case of reopening)
-  await supabase.from("settlements").delete().eq("event_id", eventId);
-
-  // Save settlements to database
-  if (settlements.length > 0) {
-    const { error: settlementsError } = await supabase
-      .from("settlements")
-      .insert(
-        settlements.map((s) => ({
-          event_id: eventId,
-          from_participant_id: s.fromParticipantId,
-          to_participant_id: s.toParticipantId,
-          from_name: s.fromName,
-          to_name: s.toName,
-          amount: s.amount,
-        })),
-      );
-
-    if (settlementsError) {
-      console.error("Error saving settlements:", settlementsError);
-      return { error: "Failed to save settlements" };
-    }
-  }
-
-  // Close the event
-  const { error: closeError } = await supabase
-    .from("events")
-    .update({ status: "closed" })
-    .eq("id", eventId);
-
-  if (closeError) {
-    console.error("Error closing event:", closeError);
-    return { error: "Failed to close event" };
-  }
-
-  // Send personalized emails to participants
-  for (const participant of event.participants) {
-    // Filter settlements relevant to this participant
-    const relevantSettlements = {
-      toPay: settlements
-        .filter((s) => s.fromParticipantId === participant.id)
-        .map((s) => ({ to: s.toName, amount: s.amount })),
-      toReceive: settlements
-        .filter((s) => s.toParticipantId === participant.id)
-        .map((s) => ({ from: s.fromName, amount: s.amount })),
-    };
-
-    // Send email if available
-    if (participant.email) {
-      await sendSettlementEmail(
-        participant.email,
-        participant.name,
-        event.title,
-        event.currency || "USD",
-        relevantSettlements,
-        event.email_note,
-        event.slug,
-      );
-    }
-  }
-
-  await logEventAction(supabase, eventId, "event_closed", user.id, null);
-
-  revalidatePath("/dashboard");
-  revalidatePath(`/event/${event.slug}`);
-  return { success: true };
-}
-
-// V2: New function to reopen closed events
-export async function reopenEvent(eventId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
-
-  // Verify ownership
-  const { data: event } = await supabase
-    .from("events")
-    .select("owner_id, status, slug")
-    .eq("id", eventId)
-    .single();
-
-  if (!event || event.owner_id !== user.id) {
-    return { error: "Unauthorized" };
-  }
-
-  if (event.status === "open") {
-    return { error: "Event is already open" };
-  }
-
-  // Reopen the event
-  const { error } = await supabase
-    .from("events")
-    .update({ status: "open" })
-    .eq("id", eventId);
-
-  if (error) {
-    console.error("Error reopening event:", error);
-    return { error: "Failed to reopen event" };
-  }
-
-  // Optionally delete settlements (or keep them for reference)
-  // For now, we'll keep them but they'll be recalculated on next close
-
-  await logEventAction(supabase, eventId, "event_reopened", user.id, null);
+  if (error) return { error };
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/event/${eventId}`);
-  revalidatePath(`/event/${event.slug}`);
+  return { success: true };
+}
+
+export async function closeEvent(eventId: string) {
+  const { error } = await apiFetch(`/api/events/${eventId}/close`, {
+    method: "POST",
+    auth: true,
+  });
+
+  if (error) return { error };
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/event/${eventId}`);
   return { success: true };
 }
 
 export async function deleteEvent(eventId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { error } = await apiFetch(`/api/events/${eventId}`, {
+    method: "DELETE",
+    auth: true,
+  });
 
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
-
-  // Verify ownership
-  const { data: event } = await supabase
-    .from("events")
-    .select("owner_id")
-    .eq("id", eventId)
-    .single();
-
-  if (!event || event.owner_id !== user.id) {
-    return { error: "Unauthorized" };
-  }
-
-  const { error } = await supabase.from("events").delete().eq("id", eventId);
-
-  if (error) {
-    console.error("Error deleting event:", error);
-    return { error: "Failed to delete event" };
-  }
+  if (error) return { error };
 
   revalidatePath("/dashboard");
   redirect("/dashboard");
 }
 
-// V2: Expense category management
-export async function createExpenseCategory(
-  eventId: string,
-  name: string,
-  color?: string,
-  icon?: string,
-) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Unauthorized" };
-  }
-
-  // Verify ownership
-  const { data: event } = await supabase
-    .from("events")
-    .select("owner_id")
-    .eq("id", eventId)
-    .single();
-
-  if (!event || event.owner_id !== user.id) {
-    return { error: "Unauthorized" };
-  }
-
-  const { data: category, error } = await supabase
-    .from("expense_categories")
-    .insert({
-      event_id: eventId,
-      name,
-      color: color || null,
-      icon: icon || null,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error creating category:", error);
-    if (error.code === "23505") {
-      return { error: "A category with this name already exists" };
-    }
-    return { error: "Failed to create category" };
-  }
-
-  revalidatePath(`/dashboard/event/${eventId}`);
-  return { success: true, category };
-}
-
-export async function getExpenseCategories(eventId: string) {
-  const supabase = await createClient();
-
-  const { data: categories, error } = await supabase
-    .from("expense_categories")
-    .select("*")
-    .eq("event_id", eventId)
-    .order("name", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching categories:", error);
-    return [];
-  }
-
-  return categories || [];
-}
