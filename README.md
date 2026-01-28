@@ -92,9 +92,12 @@ In your Supabase project dashboard:
    - First, copy and execute `supabase/migrations/20231220000000_initial_schema.sql`
    - Then, copy and execute `supabase/migrations/20231220000001_sync_auth_users.sql`
    - Then, copy and execute `supabase/migrations/20231220000002_add_currency_support.sql`
-   - Finally, copy and execute `supabase/migrations/20231220000003_remove_telegram_username.sql`
+   - Then, copy and execute `supabase/migrations/20231220000003_remove_telegram_username.sql`
+   - Finally, copy and execute `supabase/migrations/20231220000004_fix_user_insert_policy.sql`
 
-This will create all necessary tables, Row Level Security policies, automatic user syncing, and currency support.
+This will create all necessary tables, Row Level Security policies, automatic user syncing, currency support, and fix the user INSERT policy for signup.
+
+**Note**: If you encounter a "Database permission error" when signing up, make sure you've run the `20231220000004_fix_user_insert_policy.sql` migration. Alternatively, you can run the quick fix script `FIX_USER_POLICY.sql` directly in the Supabase SQL Editor.
 
 ### 5. Configure Email (Gmail)
 
