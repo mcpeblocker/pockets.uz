@@ -25,7 +25,7 @@ services:
       - default
     restart: unless-stopped
     ports:
-      - "${SERVER_HOST_PORT:-3001}:3001"
+      - "${BACKEND_HOST_PORT:-3001}:3001"
     volumes:
       # Persist database and uploads
       - ./server/data:/usr/src/app/data
