@@ -2,8 +2,9 @@ FROM node:lts-slim AS builder
 
 WORKDIR /usr/src/app
 
+# Install dependencies in a way that's compatible with the lockfile across npm versions
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 COPY . .
 
@@ -22,7 +23,8 @@ COPY --from=builder /usr/src/app/package*.json ./
 COPY --from=builder /usr/src/app/.next ./.next
 COPY --from=builder /usr/src/app/next.config.* ./
 
-RUN npm ci --omit=dev
+# Install only production dependencies in the runtime image
+RUN npm install --omit=dev
 
 EXPOSE 3000
 
