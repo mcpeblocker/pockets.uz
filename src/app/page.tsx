@@ -25,30 +25,30 @@ export default async function Home() {
                 <br className="hidden sm:block" />
                 <span className="text-gray-500 dark:text-gray-400">Free forever. No registration required for participants.</span>
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-8">
                 {user ? (
                   <Link
                     href="/dashboard?create=true"
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 sm:py-4 px-6 sm:px-8 rounded-lg text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 min-h-[48px] sm:min-h-[56px] flex items-center justify-center"
                   >
                     Create Your First Event
                   </Link>
                 ) : (
                   <Link
                     href="/signup"
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 sm:py-4 px-6 sm:px-8 rounded-lg text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 min-h-[48px] sm:min-h-[56px] flex items-center justify-center"
                   >
                     Get Started Free
                   </Link>
                 )}
                 <Link
                   href="#how-it-works"
-                  className="w-full sm:w-auto bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-semibold py-4 px-8 rounded-lg text-lg border-2 border-gray-300 dark:border-gray-600 transition-all duration-200"
+                  className="w-full sm:w-auto bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-semibold py-3 sm:py-4 px-6 sm:px-8 rounded-lg text-base sm:text-lg border-2 border-gray-300 dark:border-gray-600 transition-all duration-200 min-h-[48px] sm:min-h-[56px] flex items-center justify-center"
                 >
                   See How It Works
                 </Link>
               </div>
-              <div className="flex items-center justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-2">
                   <span className="text-green-600 dark:text-green-400 font-semibold">✓</span>
                   <span>Free Forever</span>
@@ -311,7 +311,7 @@ export default async function Home() {
               <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
                 No Hidden Costs. No Surprises.
               </h2>
-              <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
+            <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
                 Pockets is completely free to use. No credit card required. No subscription fees. No limits.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left mb-8">
@@ -444,8 +444,8 @@ export default async function Home() {
                 <h3 className="text-white font-bold text-xl mb-4">Pockets</h3>
                 <p className="text-gray-400 text-sm">
                   The easiest way to share expenses and settle debts with friends and groups.
-                </p>
-              </div>
+              </p>
+            </div>
               <div>
                 <h4 className="text-white font-semibold mb-4">Product</h4>
                 <ul className="space-y-2 text-sm">

@@ -414,22 +414,22 @@ export default function EventPageClient({
                 {expenses.map((expense) => (
                   <div
                     key={expense.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
                   >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
                             {expense.receipts && expense.receipts.length > 0 ? (
-                              <span className="text-xl">📷</span>
+                              <span className="text-xl flex-shrink-0">📷</span>
                             ) : (
-                              <span className="text-xl">💰</span>
+                              <span className="text-xl flex-shrink-0">💰</span>
                             )}
-                    <div>
-                      <p className="font-medium">{expense.description}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-base sm:text-sm truncate">{expense.description}</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         Paid by {expense.paid_by?.name || 'Unknown'}
                       </p>
                     </div>
                           </div>
-                          <p className="text-lg font-bold">{formatCurrency(expense.amount, event.currency)}</p>
+                          <p className="text-lg sm:text-base font-bold text-right sm:text-left">{formatCurrency(expense.amount, event.currency)}</p>
                         </div>
                       ))}
                     </div>

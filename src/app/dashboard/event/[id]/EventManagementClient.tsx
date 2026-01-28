@@ -515,13 +515,13 @@ export default function EventManagementClient({
                 <div className="text-sm text-gray-500 mt-2">
                   <span>Public URL: </span>
                   <div className="flex items-center gap-2 mt-1">
-                    <Link
-                      href={`/event/${event.slug}`}
-                      className="text-blue-600 hover:underline"
-                      target="_blank"
-                    >
-                      /event/{event.slug}
-                    </Link>
+                  <Link
+                    href={`/event/${event.slug}`}
+                    className="text-blue-600 hover:underline"
+                    target="_blank"
+                  >
+                    /event/{event.slug}
+                  </Link>
                     <button
                       onClick={(e) => {
                         e.preventDefault();
@@ -599,33 +599,33 @@ export default function EventManagementClient({
 
             {/* Action Buttons - Only for owners */}
             {event.owner_id === currentUserId && (
-              <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                {event.status === "open" && (
-                  <Fragment>
-                    <button
-                      onClick={() => setShowEmailNote(true)}
-                      className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg"
-                    >
-                      Edit Email Note
-                    </button>
-                    <button
-                      onClick={handleCloseEvent}
-                      disabled={
-                        participants.length === 0 || expenses.length === 0
-                      }
-                      className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg"
-                    >
-                      Close Event & Send Settlements
-                    </button>
-                  </Fragment>
-                )}
-                <button
-                  onClick={handleDeleteEvent}
-                  className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg"
-                >
-                  Delete Event
-                </button>
-              </div>
+            <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              {event.status === "open" && (
+                <Fragment>
+                  <button
+                    onClick={() => setShowEmailNote(true)}
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg"
+                  >
+                    Edit Email Note
+                  </button>
+                  <button
+                    onClick={handleCloseEvent}
+                    disabled={
+                      participants.length === 0 || expenses.length === 0
+                    }
+                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg"
+                  >
+                    Close Event & Send Settlements
+                  </button>
+                </Fragment>
+              )}
+              <button
+                onClick={handleDeleteEvent}
+                className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg"
+              >
+                Delete Event
+              </button>
+            </div>
             )}
           </div>
 
@@ -765,10 +765,10 @@ export default function EventManagementClient({
 
           {/* Add Expense Form Modal */}
           {showAddExpense && event.status === "open" && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-2xl w-full my-8 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold">Add Expense</h2>
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center p-0 sm:p-4 z-50 overflow-y-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 max-w-2xl w-full min-h-[100vh] sm:min-h-0 sm:my-8 border-t sm:border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-4 sm:mb-6 sticky top-0 bg-white dark:bg-gray-800 py-2 sm:py-0 z-10">
+                  <h2 className="text-xl sm:text-2xl font-bold">Add Expense</h2>
                   <button
                     onClick={() => {
                       setShowAddExpense(false);
@@ -780,65 +780,68 @@ export default function EventManagementClient({
                       setSplitEnabled(true);
                       setSplitType("equal");
                     }}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] min-w-[44px] flex items-center justify-center text-2xl sm:text-xl"
+                    aria-label="Close"
                   >
                     ✕
                   </button>
                 </div>
                 <form onSubmit={handleAddExpense} className="space-y-6">
-                  <input type="hidden" name="eventId" value={event.id} />
+                <input type="hidden" name="eventId" value={event.id} />
 
                   {/* Title */}
-                  <div>
+                <div>
                     <label htmlFor="description" className="block text-sm font-medium mb-2">
                       Title *
-                    </label>
+                  </label>
                     <div className="flex gap-2">
-                      <input
-                        id="description"
-                        name="description"
-                        type="text"
-                        required
+                  <input
+                    id="description"
+                    name="description"
+                    type="text"
+                    required
                         placeholder="E.g. Drinks"
-                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                        className="flex-1 px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-base"
                       />
                       <button
                         type="button"
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        className="px-3 sm:px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 min-h-[44px] min-w-[44px] flex items-center justify-center text-lg sm:text-base"
                         title="Category"
+                        aria-label="Category"
                       >
                         🏷️
                       </button>
                       <button
                         type="button"
                         onClick={() => document.getElementById('expensePhotos')?.click()}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        className="px-3 sm:px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 min-h-[44px] min-w-[44px] flex items-center justify-center text-lg sm:text-base"
                         title="Add Photo"
+                        aria-label="Add Photo"
                       >
                         📷
                       </button>
                     </div>
-                  </div>
+                </div>
 
                   {/* Amount */}
-                  <div>
+                <div>
                     <label htmlFor="amount" className="block text-sm font-medium mb-2">
-                      Amount *
-                    </label>
-                    <input
-                      id="amount"
-                      name="amount"
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      required
+                    Amount *
+                  </label>
+                  <input
+                    id="amount"
+                    name="amount"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
                       placeholder="0.00"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-lg"
+                      className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-lg sm:text-base min-h-[44px]"
                     />
                   </div>
 
                   {/* Paid By & When */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="paidByParticipantId" className="block text-sm font-medium mb-2">
                         Paid By *
@@ -847,7 +850,7 @@ export default function EventManagementClient({
                         id="paidByParticipantId"
                         name="paidByParticipantId"
                         required
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                        className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-base min-h-[44px]"
                       >
                         <option value="">Select participant</option>
                         {participants.map((p) => (
@@ -868,13 +871,13 @@ export default function EventManagementClient({
                         value={expenseDate}
                         onChange={(e) => setExpenseDate(e.target.value)}
                         required
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                        className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-base min-h-[44px]"
                       />
                     </div>
-                  </div>
+                </div>
 
                   {/* Split Expense */}
-                  <div>
+                <div>
                     <div className="flex items-center gap-3 mb-4">
                       <input
                         type="checkbox"
@@ -1113,22 +1116,22 @@ export default function EventManagementClient({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="edit-paidByParticipantId" className="block text-sm font-medium mb-2">
-                        Paid By *
-                      </label>
-                      <select
+                    Paid By *
+                  </label>
+                  <select
                         id="edit-paidByParticipantId"
-                        name="paidByParticipantId"
-                        required
+                    name="paidByParticipantId"
+                    required
                         defaultValue={editingExpense.paid_by_participant_id}
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                      >
-                        <option value="">Select participant</option>
-                        {participants.map((p) => (
-                          <option key={p.id} value={p.id}>
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                  >
+                    <option value="">Select participant</option>
+                    {participants.map((p) => (
+                      <option key={p.id} value={p.id}>
                             {p.name} {p.user_id === currentUserId ? "(me)" : ""}
-                          </option>
-                        ))}
-                      </select>
+                      </option>
+                    ))}
+                  </select>
                     </div>
                     <div>
                       <label htmlFor="edit-expenseDate" className="block text-sm font-medium mb-2">
@@ -1144,7 +1147,7 @@ export default function EventManagementClient({
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
                       />
                     </div>
-                  </div>
+                </div>
 
                   {/* Split Expense */}
                   <div>
@@ -1274,40 +1277,40 @@ export default function EventManagementClient({
                     </div>
                   )}
 
-                  {expenseStatus === "error" && (
-                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-800 dark:text-red-200">
-                      {expenseMessage}
-                    </div>
-                  )}
+                {expenseStatus === "error" && (
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-800 dark:text-red-200">
+                    {expenseMessage}
+                  </div>
+                )}
 
                   <div className="flex gap-3 pt-4">
-                    <button
-                      type="submit"
-                      disabled={expenseStatus === "loading"}
+                  <button
+                    type="submit"
+                    disabled={expenseStatus === "loading"}
                       className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-blue-400 disabled:to-purple-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
-                    >
+                  >
                       {expenseStatus === "loading" ? "Updating..." : "Update"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
                         setShowEditExpense(false);
                         setEditingExpense(null);
-                        setExpenseStatus("idle");
-                        setExpenseMessage("");
+                      setExpenseStatus("idle");
+                      setExpenseMessage("");
                         setSelectedParticipants([]);
                         setExpensePhotos([]);
                         setParticipantAmounts({});
                         setSplitEnabled(true);
                         setSplitType("equal");
                         setExpenseDate(new Date().toISOString().split('T')[0]);
-                      }}
-                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
+                    }}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
               </div>
             </div>
           )}
@@ -1798,12 +1801,12 @@ export default function EventManagementClient({
                   </div>
 
                   {/* Expenses List */}
-                  {expenses.length === 0 ? (
+            {expenses.length === 0 ? (
                     <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-                      No expenses yet.
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
+                No expenses yet.
+              </p>
+            ) : (
+              <div className="space-y-3">
                       {/* Group by date */}
                       {(() => {
                         const grouped = expenses.reduce((acc, expense) => {
@@ -1822,52 +1825,52 @@ export default function EventManagementClient({
                             </h3>
                             <div className="space-y-2">
                               {dateExpenses.map((expense) => (
-                                <div
-                                  key={expense.id}
-                                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
-                                >
-                                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                  <div
+                    key={expense.id}
+                                  className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0">
                                     {expense.receipts && expense.receipts.length > 0 ? "📷" : "💰"}
                                   </div>
-                                  <div className="flex-1">
-                                    <p className="font-medium">{expense.description}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                      Paid by {expense.paid_by?.name || "Unknown"}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-4">
-                                    <p className="text-lg font-bold">
-                                      {formatCurrency(expense.amount, event.currency)}
-                                    </p>
-                                    {event.status === "open" && (
-                                      <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-base sm:text-sm truncate">{expense.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Paid by {expense.paid_by?.name || "Unknown"}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
+                      <p className="text-lg sm:text-base font-bold">
+                        {formatCurrency(expense.amount, event.currency)}
+                      </p>
+                      {event.status === "open" && (
+                                      <div className="flex items-center gap-2 sm:gap-3">
                                         {(event.owner_id === currentUserId || (expense as any).created_by === currentUserId) && (
                                           <button
                                             onClick={() => handleEditExpense(expense)}
-                                            className="text-blue-600 hover:text-blue-700 text-sm"
+                                            className="text-blue-600 hover:text-blue-700 text-sm sm:text-xs font-medium px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 min-h-[36px] sm:min-h-[32px] min-w-[44px] sm:min-w-[auto] flex items-center justify-center"
                                           >
                                             Edit
                                           </button>
                                         )}
                                         {event.owner_id === currentUserId && (
-                                          <button
-                                            onClick={() => handleDeleteExpense(expense.id)}
-                                            className="text-red-600 hover:text-red-700 text-sm"
-                                          >
-                                            Delete
-                                          </button>
+                        <button
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          className="text-red-600 hover:text-red-700 text-sm sm:text-xs font-medium px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 min-h-[36px] sm:min-h-[32px] min-w-[44px] sm:min-w-[auto] flex items-center justify-center"
+                        >
+                          Delete
+                        </button>
                                         )}
                                       </div>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
+                      )}
+                    </div>
+                  </div>
+                ))}
                             </div>
                           </div>
                         ));
                       })()}
-                    </div>
-                  )}
+              </div>
+            )}
                 </>
               )}
 
