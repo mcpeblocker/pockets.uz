@@ -9,6 +9,7 @@ import { CURRENCIES } from "@/lib/currency";
 type DashboardUser = {
   id: string;
   email: string;
+  name?: string | null;
 };
 
 type DashboardEvent = {
@@ -82,7 +83,7 @@ export default function DashboardClient({
             <div>
               <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Dashboard</h1>
               <p className="text-gray-600 dark:text-gray-400 text-lg">
-                Welcome back, <span className="font-semibold">{user.email}</span>
+                Welcome back, <span className="font-semibold">{user.name || user.email}</span>
               </p>
             </div>
             <button
