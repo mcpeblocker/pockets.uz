@@ -1037,10 +1037,10 @@ export default function EventManagementClient({
 
           {/* Edit Expense Form Modal */}
           {showEditExpense && editingExpense && event.status === "open" && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-2xl w-full my-8 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold">Edit Expense</h2>
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center p-0 sm:p-4 z-50 overflow-y-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 max-w-2xl w-full min-h-[100vh] sm:min-h-0 sm:my-8 border-t sm:border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-4 sm:mb-6 sticky top-0 bg-white dark:bg-gray-800 py-2 sm:py-0 z-10">
+                  <h2 className="text-xl sm:text-2xl font-bold">Edit Expense</h2>
                   <button
                     onClick={() => {
                       setShowEditExpense(false);
@@ -1053,7 +1053,8 @@ export default function EventManagementClient({
                       setSplitType("equal");
                       setExpenseDate(new Date().toISOString().split('T')[0]);
                     }}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-h-[44px] min-w-[44px] flex items-center justify-center text-2xl sm:text-xl"
+                    aria-label="Close"
                   >
                     ✕
                   </button>
@@ -1074,20 +1075,22 @@ export default function EventManagementClient({
                         required
                         defaultValue={editingExpense.description}
                         placeholder="E.g. Drinks"
-                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                        className="flex-1 px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-base"
                       />
                       <button
                         type="button"
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        className="px-3 sm:px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 min-h-[44px] min-w-[44px] flex items-center justify-center text-lg sm:text-base"
                         title="Category"
+                        aria-label="Category"
                       >
                         🏷️
                       </button>
                       <button
                         type="button"
                         onClick={() => document.getElementById('edit-expensePhotos')?.click()}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        className="px-3 sm:px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 min-h-[44px] min-w-[44px] flex items-center justify-center text-lg sm:text-base"
                         title="Add Photo"
+                        aria-label="Add Photo"
                       >
                         📷
                       </button>
@@ -1108,12 +1111,12 @@ export default function EventManagementClient({
                       required
                       defaultValue={editingExpense.amount}
                       placeholder="0.00"
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-lg"
+                      className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-lg sm:text-base min-h-[44px]"
                     />
                   </div>
 
                   {/* Paid By & When */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="edit-paidByParticipantId" className="block text-sm font-medium mb-2">
                     Paid By *
@@ -1123,7 +1126,7 @@ export default function EventManagementClient({
                     name="paidByParticipantId"
                     required
                         defaultValue={editingExpense.paid_by_participant_id}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                    className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-base min-h-[44px]"
                   >
                     <option value="">Select participant</option>
                     {participants.map((p) => (
@@ -1144,7 +1147,7 @@ export default function EventManagementClient({
                         value={expenseDate}
                         onChange={(e) => setExpenseDate(e.target.value)}
                         required
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                        className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-base min-h-[44px]"
                       />
                     </div>
                 </div>
@@ -1173,7 +1176,7 @@ export default function EventManagementClient({
                           <button
                             type="button"
                             onClick={() => setSplitType("equal")}
-                            className={`px-3 py-1 rounded text-sm ${
+                            className={`px-3 sm:px-4 py-2 rounded text-sm sm:text-xs font-medium min-h-[36px] sm:min-h-[32px] ${
                               splitType === "equal"
                                 ? "bg-blue-600 text-white"
                                 : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
@@ -1184,12 +1187,13 @@ export default function EventManagementClient({
                           <button
                             type="button"
                             onClick={() => setSplitType("custom")}
-                            className={`px-3 py-1 rounded text-sm ${
+                            className={`px-3 sm:px-4 py-2 rounded text-sm sm:text-xs font-medium min-h-[36px] sm:min-h-[32px] min-w-[44px] sm:min-w-[auto] ${
                               splitType === "custom"
                                 ? "bg-blue-600 text-white"
                                 : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                             }`}
                             title="Custom Split"
+                            aria-label="Custom Split"
                           >
                             ⇄
                           </button>
@@ -1283,11 +1287,11 @@ export default function EventManagementClient({
                   </div>
                 )}
 
-                  <div className="flex gap-3 pt-4">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <button
                     type="submit"
                     disabled={expenseStatus === "loading"}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-blue-400 disabled:to-purple-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-blue-400 disabled:to-purple-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none min-h-[48px] flex items-center justify-center"
                   >
                       {expenseStatus === "loading" ? "Updating..." : "Update"}
                   </button>
@@ -1305,7 +1309,7 @@ export default function EventManagementClient({
                         setSplitType("equal");
                         setExpenseDate(new Date().toISOString().split('T')[0]);
                     }}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 min-h-[48px] sm:min-h-[44px] flex items-center justify-center"
                   >
                     Cancel
                   </button>
