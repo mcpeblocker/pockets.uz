@@ -1837,7 +1837,7 @@ export default function EventManagementClient({
                                   </div>
                                   <div className="flex items-center gap-4">
                                     <p className="text-lg font-bold">
-                                      {formatCurrency(expense.amount, expense.currency || event.currency)}
+                                      {formatCurrency(expense.amount, event.currency)}
                                     </p>
                                     {event.status === "open" && (
                                       <div className="flex items-center gap-2">

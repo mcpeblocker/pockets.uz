@@ -62,10 +62,10 @@ export default function EventPageClient({
   // Check if user already joined from this device (for non-authenticated users)
   useEffect(() => {
     if (!userParticipantId) {
-      const storedId = localStorage.getItem(`event_${event.id}_participant`);
-      if (storedId) {
-        setMyParticipantId(storedId);
-      }
+    const storedId = localStorage.getItem(`event_${event.id}_participant`);
+    if (storedId) {
+      setMyParticipantId(storedId);
+    }
     }
   }, [event.id, userParticipantId]);
 
@@ -407,29 +407,29 @@ export default function EventPageClient({
               {/* Expenses Tab */}
               {activeTab === 'expenses' && (
                 <>
-                  {expenses.length === 0 ? (
+            {expenses.length === 0 ? (
                     <p className="text-gray-600 dark:text-gray-400 text-center py-8">No expenses yet.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {expenses.map((expense) => (
-                        <div
-                          key={expense.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                        >
+            ) : (
+              <div className="space-y-3">
+                {expenses.map((expense) => (
+                  <div
+                    key={expense.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                  >
                           <div className="flex items-center gap-3">
                             {expense.receipts && expense.receipts.length > 0 ? (
                               <span className="text-xl">📷</span>
                             ) : (
                               <span className="text-xl">💰</span>
                             )}
-                            <div>
-                              <p className="font-medium">{expense.description}</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Paid by {expense.paid_by?.name || 'Unknown'}
-                              </p>
-                            </div>
+                    <div>
+                      <p className="font-medium">{expense.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Paid by {expense.paid_by?.name || 'Unknown'}
+                      </p>
+                    </div>
                           </div>
-                          <p className="text-lg font-bold">{formatCurrency(expense.amount, expense.currency || event.currency)}</p>
+                          <p className="text-lg font-bold">{formatCurrency(expense.amount, event.currency)}</p>
                         </div>
                       ))}
                     </div>
@@ -532,10 +532,10 @@ export default function EventPageClient({
                               alt="Receipt"
                               className="w-full h-full object-cover"
                             />
-                          </div>
-                        ))}
-                    </div>
-                  )}
+                  </div>
+                ))}
+              </div>
+            )}
                 </div>
               )}
             </div>
