@@ -34,6 +34,7 @@ export interface Translations {
     hero: {
       title: string;
       subtitle: string;
+      subtitle2: string;
       getStarted: string;
       seeHowItWorks: string;
       freeForever: string;
@@ -422,6 +423,7 @@ export const translations: Record<Language, Translations> = {
       hero: {
         title: 'Разделяйте расходы. Урегулируйте долги. Без проблем.',
         subtitle: 'Самый простой способ отслеживать общие расходы с друзьями, соседями и группами.',
+        subtitle2: 'Бесплатно навсегда. Регистрация не требуется для участников.',
         getStarted: 'Начать бесплатно',
         seeHowItWorks: 'Как это работает',
         freeForever: 'Навсегда бесплатно',

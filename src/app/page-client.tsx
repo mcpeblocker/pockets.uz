@@ -22,7 +22,7 @@ export default function HomeClient({ user }: HomeClientProps) {
             <p className="text-xl sm:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
               {t.home.hero.subtitle}
               <br className="hidden sm:block" />
-              <span className="text-gray-500 dark:text-gray-400">{t.home.hero.subtitle2 || 'Free forever. No registration required for participants.'}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t.home.hero.subtitle2}</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-8">
               {user ? (
