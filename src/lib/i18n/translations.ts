@@ -107,6 +107,15 @@ export interface Translations {
     copyUrl: string;
     qrCode: string;
     balanceHelp: string;
+    noExpenses: string;
+    eventClosed: string;
+    paymentStatus: string;
+    paid: string;
+    pending: string;
+    markAsPaid: string;
+    noPhotos: string;
+    noParticipants: string;
+    noteFromOrganizer: string;
   };
 
   // Messages
@@ -231,6 +240,15 @@ export const translations: Record<Language, Translations> = {
       copyUrl: 'Copy URL',
       qrCode: 'QR Code',
       balanceHelp: 'Green numbers show money you should receive, red numbers show money you should pay.',
+      noExpenses: 'No expenses yet.',
+      eventClosed: 'This event is closed',
+      paymentStatus: 'Payment Status',
+      paid: 'Paid',
+      pending: 'Pending',
+      markAsPaid: 'Mark as Paid',
+      noPhotos: 'No expenses with photos yet.',
+      noParticipants: 'No participants yet.',
+      noteFromOrganizer: 'Note from organizer:',
     },
     messages: {
       eventCreated: 'Event created successfully!',
@@ -351,6 +369,15 @@ export const translations: Record<Language, Translations> = {
       copyUrl: 'URL nusxalash',
       qrCode: 'QR kod',
       balanceHelp: 'Yashil raqamlar olishingiz kerak bo\'lgan pulni, qizil raqamlar to\'lashingiz kerak bo\'lgan pulni ko\'rsatadi.',
+      noExpenses: 'Hali xarajatlar yo\'q.',
+      eventClosed: 'Bu tadbir yopilgan',
+      paymentStatus: 'To\'lov holati',
+      paid: 'To\'langan',
+      pending: 'Kutilmoqda',
+      markAsPaid: 'To\'langan deb belgilash',
+      noPhotos: 'Hali rasmlar bilan xarajatlar yo\'q.',
+      noParticipants: 'Hali ishtirokchilar yo\'q.',
+      noteFromOrganizer: 'Tashkilotchidan eslatma:',
     },
     messages: {
       eventCreated: 'Tadbir muvaffaqiyatli yaratildi!',
@@ -471,6 +498,15 @@ export const translations: Record<Language, Translations> = {
       copyUrl: 'Копировать URL',
       qrCode: 'QR-код',
       balanceHelp: 'Зеленые числа показывают деньги, которые вы должны получить, красные числа показывают деньги, которые вы должны заплатить.',
+      noExpenses: 'Пока нет расходов.',
+      eventClosed: 'Это событие закрыто',
+      paymentStatus: 'Статус оплаты',
+      paid: 'Оплачено',
+      pending: 'Ожидает',
+      markAsPaid: 'Отметить как оплаченное',
+      noPhotos: 'Пока нет расходов с фото.',
+      noParticipants: 'Пока нет участников.',
+      noteFromOrganizer: 'Примечание от организатора:',
     },
     messages: {
       eventCreated: 'Событие успешно создано!',
