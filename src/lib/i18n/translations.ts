@@ -75,6 +75,7 @@ export interface Translations {
     eventParticipant: string;
     open: string;
     closed: string;
+    urlSlugHelp: string;
   };
 
   // Event

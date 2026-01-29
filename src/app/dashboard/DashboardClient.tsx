@@ -123,9 +123,26 @@ export default function DashboardClient({
                 </div>
 
                 <div>
-                  <label htmlFor="slug" className="block text-sm font-medium mb-2">
-                    URL Slug *
-                  </label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label htmlFor="slug" className="block text-sm font-medium">
+                      URL Slug *
+                    </label>
+                    <div className="relative group">
+                      <button
+                        type="button"
+                        className="w-4 h-4 rounded-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 text-xs font-medium flex items-center justify-center hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+                        aria-label="URL Slug information"
+                      >
+                        ?
+                      </button>
+                      <div className="absolute left-0 bottom-full mb-2 w-64 p-2 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                        <p>{t.dashboard.urlSlugHelp}</p>
+                        <div className="absolute left-2 bottom-0 transform translate-y-full">
+                          <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className="text-gray-600 dark:text-gray-400">/event/</span>
                     <input
