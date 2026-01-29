@@ -165,6 +165,7 @@ export const translations: Record<Language, Translations> = {
       hero: {
         title: 'Split Expenses. Settle Debts. No Hassle.',
         subtitle: 'The easiest way to track shared expenses with friends, roommates, and groups.',
+        subtitle2: 'Free forever. No registration required for participants.',
         getStarted: 'Get Started Free',
         seeHowItWorks: 'See How It Works',
         freeForever: 'Free Forever',
@@ -294,6 +295,7 @@ export const translations: Record<Language, Translations> = {
       hero: {
         title: 'Xarajatlarni bo\'lish. Qarzlar. Muammosiz.',
         subtitle: 'Do\'stlar, xonadoshlar va guruhlar bilan umumiy xarajatlarni kuzatishning eng oson usuli.',
+        subtitle2: 'Abadiy bepul. Ishtirokchilar uchun ro\'yxatdan o\'tish shart emas.',
         getStarted: 'Bepul boshlash',
         seeHowItWorks: 'Qanday ishlashini ko\'rish',
         freeForever: 'Doimiy bepul',
