@@ -11,8 +11,6 @@ This project was created and developed by:
 - **Alisher Ortiqov** ([@mcpeblocker](https://github.com/mcpeblocker))
 - **Kamoliddin Yulbarsov** ([@KamoliddinCS](https://github.com/KamoliddinCS))
 
-Both authors contributed equally to the development of this project.
-
 ## 🌟 Features
 
 - **No Registration Required**: Participants can join events and view expenses without creating an account
