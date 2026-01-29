@@ -4,6 +4,15 @@
 
 Pockets is a modern web application that simplifies group expense management. No registration required to participate—just share a link and start tracking expenses!
 
+## 👥 Authors
+
+This project was created and developed by:
+
+- **Alisher Ortiqov** ([@mcpeblocker](https://github.com/mcpeblocker))
+- **Kamoliddin Yulbarsov** ([@KamoliddinCS](https://github.com/KamoliddinCS))
+
+Both authors contributed equally to the development of this project.
+
 ## 🌟 Features
 
 - **No Registration Required**: Participants can join events and view expenses without creating an account
@@ -317,4 +326,4 @@ ISC License - see LICENSE file for details
 
 ---
 
-Built with ❤️ using Next.js and an Express + SQLite backend
+Built with ❤️ by [Alisher Ortiqov](https://github.com/mcpeblocker) and [Kamoliddin Yulbarsov](https://github.com/KamoliddinCS) using Next.js and an Express + SQLite backend
