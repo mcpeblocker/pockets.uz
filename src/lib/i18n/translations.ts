@@ -212,6 +212,7 @@ export const translations: Record<Language, Translations> = {
       eventParticipant: 'Participant',
       open: 'Open',
       closed: 'Closed',
+      urlSlugHelp: 'The URL slug is the unique identifier for your event. It will be used in the event URL (e.g., /event/team-dinner). Use only lowercase letters, numbers, and hyphens.',
     },
     event: {
       create: 'Create New Event',
@@ -342,6 +343,7 @@ export const translations: Record<Language, Translations> = {
       eventParticipant: 'Ishtirokchi',
       open: 'Ochiq',
       closed: 'Yopiq',
+      urlSlugHelp: 'URL manzili sizning tadbiringizning noyob identifikatori. U tadbir URL manzilida ishlatiladi (masalan, /event/jamoa-kechki-ovqati). Faqat kichik harflar, raqamlar va defislardan foydalaning.',
     },
     event: {
       create: 'Yangi tadbir yaratish',
@@ -472,6 +474,7 @@ export const translations: Record<Language, Translations> = {
       eventParticipant: 'Участник',
       open: 'Открыто',
       closed: 'Закрыто',
+      urlSlugHelp: 'URL-адрес - это уникальный идентификатор вашего события. Он будет использоваться в URL события (например, /event/komandnyy-uzhin). Используйте только строчные буквы, цифры и дефисы.',
     },
     event: {
       create: 'Создать новое событие',
