@@ -20,6 +20,7 @@ import Link from "next/link";
 import QRCode from "@/components/QRCode";
 import { calculateBalances } from "@/lib/settlements";
 import { scanReceipt, ExtractedReceiptData } from "@/lib/ocr";
+import { useI18n } from "@/lib/i18n/context";
 
 interface EventManagementClientProps {
   event: Event;
