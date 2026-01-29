@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { signUpWithPassword } from '@/app/actions/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/lib/i18n/context';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -48,9 +50,9 @@ export default function SignUpPage() {
     <div className="min-h-screen flex items-center justify-center p-8 bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Create Account</h1>
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">{t.auth.createAccount}</h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Create an account to manage your events and groups
+            {t.auth.createAccount} {t.auth.emailVerificationRequired}
           </p>
         </div>
 
@@ -62,7 +64,7 @@ export default function SignUpPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium mb-2">
-                Name
+                {t.auth.name}
               </label>
               <input
                 id="name"
@@ -76,7 +78,7 @@ export default function SignUpPage() {
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2">
-                Email Address
+                {t.auth.email}
               </label>
               <input
                 id="email"
@@ -91,7 +93,7 @@ export default function SignUpPage() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
-                Password
+                {t.auth.password}
               </label>
               <input
                 id="password"
@@ -119,20 +121,20 @@ export default function SignUpPage() {
               disabled={status === 'loading'}
               className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 disabled:from-green-400 disabled:to-blue-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none min-h-[48px] flex items-center justify-center"
             >
-              {status === 'loading' ? 'Processing...' : 'Create Account'}
+              {status === 'loading' ? t.common.loading : t.auth.createAccount}
             </button>
           </form>
         )}
 
         <div className="mt-8 text-center space-y-3">
           <p className="text-gray-600 dark:text-gray-400">
-            Already have an account?{' '}
+            {t.auth.alreadyHaveAccount}{' '}
             <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold hover:underline transition-colors">
-              Sign in
+              {t.auth.signIn}
             </Link>
           </p>
           <Link href="/" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mt-4 inline-block text-sm font-medium transition-colors">
-            ← Back to Home
+            ← {t.common.back} {t.nav.home}
           </Link>
         </div>
       </div>

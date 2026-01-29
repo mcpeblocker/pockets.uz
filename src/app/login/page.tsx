@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { signInWithPassword } from '@/app/actions/auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/lib/i18n/context';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -36,9 +38,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-8 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Sign In</h1>
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{t.auth.signIn}</h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Sign in to manage your events and groups
+            {t.auth.signIn} {t.auth.emailVerificationRequired}
           </p>
         </div>
 
@@ -50,7 +52,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-2">
-                Email Address
+                {t.auth.email}
               </label>
               <input
                 id="email"
@@ -65,7 +67,7 @@ export default function LoginPage() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2">
-                Password
+                {t.auth.password}
               </label>
               <input
                 id="password"
@@ -89,7 +91,7 @@ export default function LoginPage() {
               disabled={status === 'loading'}
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-blue-400 disabled:to-purple-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none min-h-[48px] flex items-center justify-center"
             >
-              {status === 'loading' ? 'Processing...' : 'Sign In'}
+              {status === 'loading' ? t.common.loading : t.auth.signIn}
             </button>
           </form>
         )}
@@ -118,17 +120,17 @@ export default function LoginPage() {
               }}
               className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm transition-colors"
             >
-              Forgot password?
+              {t.auth.forgotPassword}
             </button>
           </p>
           <p className="text-gray-600 dark:text-gray-400">
-            Don&apos;t have an account?{' '}
+            {t.auth.dontHaveAccount}{' '}
             <Link href="/signup" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold hover:underline transition-colors">
-              Sign up
+              {t.auth.signUp}
             </Link>
           </p>
           <Link href="/" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mt-4 inline-block text-sm font-medium transition-colors">
-            ← Back to Home
+            ← {t.common.back} {t.nav.home}
           </Link>
         </div>
       </div>

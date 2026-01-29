@@ -38,6 +38,7 @@ export default function EventManagementClient({
   initialShowQR = false,
   currentUserId,
 }: EventManagementClientProps) {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"expenses" | "balances" | "photos">("expenses");
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [showEditExpense, setShowEditExpense] = useState(false);
@@ -557,14 +558,14 @@ export default function EventManagementClient({
                       className="text-xs text-gray-500 hover:text-gray-700 underline cursor-pointer"
                       title="Copy event URL"
                     >
-                      Copy URL
+                      {t.event.copyUrl}
                     </button>
                     <button
                       onClick={() => setShowQRCode(true)}
                       className="text-xs text-gray-500 hover:text-gray-700 underline cursor-pointer"
-                      title="Show QR Code"
+                      title={t.event.qrCode}
                     >
-                      📱 QR Code
+                      📱 {t.event.qrCode}
                     </button>
                   </div>
                 </div>
@@ -576,14 +577,14 @@ export default function EventManagementClient({
                     : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                 }`}
               >
-                {event.status === "open" ? "Open" : "Closed"}
+                {event.status === "open" ? t.dashboard.open : t.dashboard.closed}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Total Expenses
+                  {t.event.totalExpenses}
                 </p>
                 <p className="text-2xl font-bold">
                   {formatCurrency(totalExpenses, event.currency)}
@@ -591,7 +592,7 @@ export default function EventManagementClient({
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Participants
+                  {t.event.participants}
                 </p>
                 <p className="text-2xl font-bold">{participants.length}</p>
               </div>
@@ -606,7 +607,7 @@ export default function EventManagementClient({
                     onClick={() => setShowEmailNote(true)}
                     className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg"
                   >
-                    Edit Email Note
+                    {t.common.edit} Email Note
                   </button>
                   <button
                     onClick={handleCloseEvent}
@@ -615,7 +616,7 @@ export default function EventManagementClient({
                     }
                     className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg"
                   >
-                    Close Event & Send Settlements
+                    {t.event.closeEvent} & Send Settlements
                   </button>
                 </Fragment>
               )}
@@ -623,7 +624,7 @@ export default function EventManagementClient({
                 onClick={handleDeleteEvent}
                 className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg"
               >
-                Delete Event
+                {t.event.deleteEvent}
               </button>
             </div>
             )}
@@ -650,7 +651,7 @@ export default function EventManagementClient({
                     onClick={handleSaveEmailNote}
                     className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
                   >
-                    Save
+                    {t.common.save}
                   </button>
                   <button
                     onClick={() => {
@@ -659,7 +660,7 @@ export default function EventManagementClient({
                     }}
                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
-                    Cancel
+                    {t.common.cancel}
                   </button>
                 </div>
               </div>
@@ -718,7 +719,7 @@ export default function EventManagementClient({
                 onClick={() => setShowAddExpense(true)}
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
               >
-                Add Expense
+                {t.event.addExpense}
               </button>
               
               {/* OCR Scanner Teaser */}
@@ -758,7 +759,7 @@ export default function EventManagementClient({
                 onClick={() => setShowAddParticipant(true)}
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
               >
-                Add Participant Manually
+                {t.event.addParticipant}
               </button>
             </div>
           )}
@@ -792,7 +793,7 @@ export default function EventManagementClient({
                   {/* Title */}
                 <div>
                     <label htmlFor="description" className="block text-sm font-medium mb-2">
-                      Title *
+                      {t.event.title} *
                   </label>
                     <div className="flex gap-2">
                   <input
@@ -826,7 +827,7 @@ export default function EventManagementClient({
                   {/* Amount */}
                 <div>
                     <label htmlFor="amount" className="block text-sm font-medium mb-2">
-                    Amount *
+                    {t.event.amount} *
                   </label>
                   <input
                     id="amount"
@@ -844,7 +845,7 @@ export default function EventManagementClient({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="paidByParticipantId" className="block text-sm font-medium mb-2">
-                        Paid By *
+                        {t.event.paidBy} *
                       </label>
                       <select
                         id="paidByParticipantId"
@@ -852,7 +853,7 @@ export default function EventManagementClient({
                         required
                         className="w-full px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 text-base min-h-[44px]"
                       >
-                        <option value="">Select participant</option>
+                        <option value="">{t.event.paidBy}</option>
                         {participants.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.name} {p.user_id === currentUserId ? "(me)" : ""}
@@ -862,7 +863,7 @@ export default function EventManagementClient({
                     </div>
                     <div>
                       <label htmlFor="expenseDate" className="block text-sm font-medium mb-2">
-                        When *
+                        {t.event.when} *
                       </label>
                       <input
                         id="expenseDate"
@@ -893,7 +894,7 @@ export default function EventManagementClient({
                         className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                       />
                       <label htmlFor="splitEnabled" className="text-sm font-medium">
-                        Split
+                        {t.event.split}
                       </label>
                       {splitEnabled && (
                         <div className="flex-1 flex items-center gap-2">
@@ -906,13 +907,13 @@ export default function EventManagementClient({
                                 : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                             }`}
                           >
-                            Equally
+                            {t.event.equally}
                           </button>
                           <button
                             type="button"
                             onClick={() => setSplitType("custom")}
                             className="text-gray-500 hover:text-gray-700"
-                            title="Custom Split"
+                            title={t.event.custom}
                           >
                             ⇄
                           </button>
@@ -1040,7 +1041,7 @@ export default function EventManagementClient({
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center p-0 sm:p-4 z-50 overflow-y-auto">
               <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 max-w-2xl w-full min-h-[100vh] sm:min-h-0 sm:my-8 border-t sm:border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-4 sm:mb-6 sticky top-0 bg-white dark:bg-gray-800 py-2 sm:py-0 z-10">
-                  <h2 className="text-xl sm:text-2xl font-bold">Edit Expense</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold">{t.event.edit}</h2>
                   <button
                     onClick={() => {
                       setShowEditExpense(false);
@@ -1065,7 +1066,7 @@ export default function EventManagementClient({
                   {/* Title */}
                   <div>
                     <label htmlFor="edit-description" className="block text-sm font-medium mb-2">
-                      Title *
+                      {t.event.title} *
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -1293,7 +1294,7 @@ export default function EventManagementClient({
                     disabled={expenseStatus === "loading"}
                       className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-blue-400 disabled:to-purple-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none min-h-[48px] flex items-center justify-center"
                   >
-                      {expenseStatus === "loading" ? "Updating..." : "Update"}
+                      {expenseStatus === "loading" ? t.common.loading : t.event.update}
                   </button>
                   <button
                     type="button"
@@ -1311,7 +1312,7 @@ export default function EventManagementClient({
                     }}
                     className="px-4 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 min-h-[48px] sm:min-h-[44px] flex items-center justify-center"
                   >
-                    Cancel
+                    {t.common.cancel}
                   </button>
                 </div>
               </form>
@@ -1764,7 +1765,7 @@ export default function EventManagementClient({
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 }`}
               >
-                Expenses
+                {t.event.expenses}
               </button>
               <button
                 onClick={() => setActiveTab("balances")}
@@ -1774,7 +1775,7 @@ export default function EventManagementClient({
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 }`}
               >
-                Balances
+                {t.event.balances}
               </button>
               <button
                 onClick={() => setActiveTab("photos")}
@@ -1784,7 +1785,7 @@ export default function EventManagementClient({
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 }`}
               >
-                Photos
+                {t.event.photos}
               </button>
             </div>
 
@@ -1795,11 +1796,11 @@ export default function EventManagementClient({
                   {/* Summary Cards */}
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">My Expenses</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t.event.yourBalance}</p>
                       <p className="text-2xl font-bold">{formatCurrency(myExpenses, event.currency)}</p>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Expenses</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t.event.totalExpenses}</p>
                       <p className="text-2xl font-bold">{formatCurrency(totalExpenses, event.currency)}</p>
                     </div>
                   </div>
@@ -1853,7 +1854,7 @@ export default function EventManagementClient({
                                             onClick={() => handleEditExpense(expense)}
                                             className="text-blue-600 hover:text-blue-700 text-sm sm:text-xs font-medium px-3 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 min-h-[36px] sm:min-h-[32px] min-w-[44px] sm:min-w-[auto] flex items-center justify-center"
                                           >
-                                            Edit
+                                            {t.common.edit}
                                           </button>
                                         )}
                                         {event.owner_id === currentUserId && (
@@ -1861,7 +1862,7 @@ export default function EventManagementClient({
                           onClick={() => handleDeleteExpense(expense.id)}
                           className="text-red-600 hover:text-red-700 text-sm sm:text-xs font-medium px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 min-h-[36px] sm:min-h-[32px] min-w-[44px] sm:min-w-[auto] flex items-center justify-center"
                         >
-                          Delete
+                          {t.common.delete}
                         </button>
                                         )}
                                       </div>
