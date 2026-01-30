@@ -1,44 +1,76 @@
-# Pockets - Shared Expense Tracking App
+<p align="center">
+  <img src="static/images/logo.png" alt="Pockets Logo" width="120" />
+</p>
 
-**Make it extremely easy for willing people to share expenses transparently and settle them.**
+<h1 align="center">Pockets</h1>
 
-Pockets is a modern web application that simplifies group expense management. No registration required to participate—just share a link and start tracking expenses!
+<p align="center">
+  <strong>Make it extremely easy for willing people to share expenses transparently and settle them.</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs&logoColor=white" />
+  <img src="https://img.shields.io/badge/TypeScript-blue?logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/TailwindCSS-v4-38B2AC?logo=tailwindcss&logoColor=white" />
+  <img src="https://img.shields.io/badge/Express.js-Backend-gray?logo=express&logoColor=white" />
+  <img src="https://img.shields.io/badge/SQLite-Database-003B57?logo=sqlite&logoColor=white" />
+</p>
+
+---
+
+## 📖 About
+
+**Pockets** is a modern web application that simplifies group expense management.
+
+No registration is required to participate — just share a link and start tracking expenses. Participants join with their name and email, expenses update in real time, and when the event closes, settlements are calculated and sent automatically via email.
+
+---
 
 ## 👥 Authors
 
 This project was created and developed by:
 
-- **Alisher Ortiqov** ([@mcpeblocker](https://github.com/mcpeblocker))
-- **Kamoliddin Yulbarsov** ([@KamoliddinCS](https://github.com/KamoliddinCS))
+- **Alisher Ortiqov** — [@mcpeblocker](https://github.com/mcpeblocker)
+- **Kamoliddin Yulbarsov** — [@KamoliddinCS](https://github.com/KamoliddinCS)
+
+---
 
 ## 🌟 Features
 
-- **No Registration Required**: Participants can join events and view expenses without creating an account
-- **Smart Split Calculation**: Automatically divides expenses equally among participants
-- **Minimized Settlements**: Uses an algorithm to minimize the number of transactions needed
-- **Multi-Currency Support**: Support for USD, EUR, GBP, JPY, KRW, CNY, INR, AUD, CAD, CHF and more
-- **Email Notifications**: Automatic personalized settlement emails when events close
-- **Join/Leave Functionality**: Participants can leave events before they close (if they have no expenses)
-- **Payment Tracking**: Mark payments as paid or pending
-- **Mobile-First Design**: Responsive and accessible on all devices
-- **Real-time Updates**: See expenses and participants update instantly
+- **No Registration Required** — Participants can join and view expenses without creating an account  
+- **Smart Split Calculation** — Automatically divides expenses equally among participants  
+- **Minimized Settlements** — Algorithm minimizes the number of transactions needed  
+- **Multi-Currency Support** — USD, EUR, GBP, JPY, KRW, CNY, INR, AUD, CAD, CHF, and more  
+- **Email Notifications** — Automatic personalized settlement emails when events close  
+- **Join / Leave Functionality** — Leave before closing if you have no expenses  
+- **Payment Tracking** — Mark payments as paid or pending  
+- **Mobile-First Design** — Fully responsive on all devices  
+- **Real-time Updates** — Expenses and participants update instantly  
+
+---
 
 ## 🛠 Tech Stack
 
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS v4
-- **Backend**: Express.js (Node.js)
-- **Database**: SQLite (via `server/` API)
-- **Authentication**: JWT (email + password, email verification)
-- **Email**: Nodemailer (Gmail SMTP)
-- **Notifications**: Telegram Bot API (optional, for support)
+| Layer | Technologies |
+|------:|--------------|
+| **Framework** | Next.js 16 (App Router) |
+| **Language** | TypeScript |
+| **Styling** | Tailwind CSS v4 |
+| **Backend** | Express.js (Node.js) |
+| **Database** | SQLite |
+| **Authentication** | JWT (email + password, email verification) |
+| **Email** | Nodemailer (Gmail SMTP) |
+| **Notifications** | Telegram Bot API (optional, admin support only) |
+
+---
 
 ## 📋 Prerequisites
 
-- Node.js 18+ and npm
-- Gmail account for SMTP (with App Password)
-- Telegram Bot (optional, for support notifications to admin)
+- Node.js 18+ and npm  
+- Gmail account for SMTP (App Password required)  
+- Telegram Bot (optional, for admin support messages)
+
+---
 
 ## 🚀 Getting Started
 
@@ -47,7 +79,6 @@ This project was created and developed by:
 ```bash
 git clone https://github.com/mcpeblocker/pockets.uz.git
 cd pockets.uz
-```
 
 ### 2. Install Dependencies
 
@@ -324,4 +355,4 @@ ISC License - see LICENSE file for details
 
 ---
 
-Built with ❤️ by [Alisher Ortiqov](https://github.com/mcpeblocker) and [Kamoliddin Yulbarsov](https://github.com/KamoliddinCS) using Next.js and an Express + SQLite backend
+<p align="center"> Built with ❤️ by Alisher Ortiqov and Kamoliddin Yulbarsov using Next.js and an Express + SQLite backend </p> ```
