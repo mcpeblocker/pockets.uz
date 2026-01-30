@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="static/images/logo.png" alt="Pockets Logo" width="120" />
+  <img src="https://cdn-icons-png.flaticon.com/512/2806/2806418.png" alt="Pockets Logo" width="120" />
 </p>
 
 <h1 align="center">Pockets</h1>
@@ -355,4 +355,4 @@ ISC License - see LICENSE file for details
 
 ---
 
-<p align="center"> Built with ❤️ by Alisher Ortiqov and Kamoliddin Yulbarsov using Next.js and an Express + SQLite backend </p> ```
+<p align="center"> Built with ❤️ by Alisher Ortiqov and Kamoliddin Yulbarsov using Next.js and an Express + SQLite backend </p>
