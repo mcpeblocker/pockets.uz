@@ -1,4 +1,4 @@
-import sqlite3 from 'sqlite3';
+import Database from 'better-sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
@@ -19,71 +19,57 @@ export function getDatabase() {
 }
 
 export async function initDatabase() {
-  return new Promise((resolve, reject) => {
-    try {
-      // Ensure directory for DB file exists
-      const dir = dirname(DB_PATH);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-    } catch (e) {
-      console.error('Error ensuring database directory exists:', e);
-      return reject(e);
+  try {
+    // Ensure directory for DB file exists
+    const dir = dirname(DB_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
 
-    db = new sqlite3.Database(DB_PATH, (err) => {
-      if (err) {
-        console.error('Error opening database:', err);
-        reject(err);
-        return;
-      }
-      
-      // Enable foreign keys
-      db.run('PRAGMA foreign_keys = ON', (err) => {
-        if (err) {
-          console.error('Error enabling foreign keys:', err);
-          reject(err);
-          return;
-        }
-        
-        console.log('✅ Database connected:', DB_PATH);
-        
-        // Initialize schema
-        initSchema(db)
-          .then(() => {
-            console.log('✅ Database schema initialized');
-            resolve();
-          })
-          .catch(reject);
-      });
-    });
-  });
+    // Create database connection (better-sqlite3 is synchronous)
+    db = new Database(DB_PATH);
+    
+    // Enable foreign keys
+    db.pragma('foreign_keys = ON');
+    
+    console.log('✅ Database connected:', DB_PATH);
+    
+    // Initialize schema
+    await initSchema(db);
+    console.log('✅ Database schema initialized');
+  } catch (err) {
+    console.error('Error initializing database:', err);
+    throw err;
+  }
 }
 
-// Promisified database methods
+// Database methods using better-sqlite3 (synchronous but wrapped for async compatibility)
 export const dbRun = (db, sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function(err) {
-      if (err) reject(err);
-      else resolve({ lastID: this.lastID, changes: this.changes });
-    });
-  });
+  try {
+    const stmt = db.prepare(sql);
+    const info = stmt.run(...params);
+    return Promise.resolve({ lastID: info.lastInsertRowid, changes: info.changes });
+  } catch (err) {
+    return Promise.reject(err);
+  }
 };
 
 export const dbGet = (db, sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
+  try {
+    const stmt = db.prepare(sql);
+    const row = stmt.get(...params);
+    return Promise.resolve(row);
+  } catch (err) {
+    return Promise.reject(err);
+  }
 };
 
 export const dbAll = (db, sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows || []);
-    });
-  });
+  try {
+    const stmt = db.prepare(sql);
+    const rows = stmt.all(...params);
+    return Promise.resolve(rows || []);
+  } catch (err) {
+    return Promise.reject(err);
+  }
 };
