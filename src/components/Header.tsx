@@ -74,7 +74,7 @@ export default function Header() {
                   </Link>
                   <Link 
                     href="/signup" 
-                    className="text-sm lg:text-base bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-4 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 min-h-[44px] flex items-center justify-center"
+                    className="text-sm lg:text-base bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 min-h-[44px] flex items-center justify-center"
                   >
                     {t.nav.signUp}
                   </Link>
@@ -142,7 +142,7 @@ export default function Header() {
                 </Link>
                 <Link 
                   href="/signup" 
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-4 py-3 rounded-lg font-semibold shadow-md text-center min-h-[44px] flex items-center justify-center"
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-white px-4 py-3 rounded-lg font-semibold shadow-md text-center min-h-[44px] flex items-center justify-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {t.nav.signUp}

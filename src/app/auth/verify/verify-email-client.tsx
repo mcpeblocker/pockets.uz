@@ -82,7 +82,7 @@ export default function VerifyEmailClient() {
         <button
           type="button"
           onClick={() => router.push(isSuccess ? "/login" : "/signup")}
-          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-emerald-400 to-sky-400 px-5 py-2.5 text-sm font-medium text-slate-950 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-400/40 transition-all"
+          className="inline-flex items-center justify-center rounded-full bg-teal-500 hover:bg-teal-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-teal-500/30 hover:shadow-teal-600/40 transition-all"
         >
           {isSuccess ? "Go to login" : "Back to sign up"}
         </button>

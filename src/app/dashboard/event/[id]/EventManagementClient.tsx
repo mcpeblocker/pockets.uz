@@ -650,7 +650,7 @@ export default function EventManagementClient({
                 <div className="flex gap-3">
                   <button
                     onClick={handleSaveEmailNote}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
                   >
                     {t.common.save}
                   </button>
@@ -698,7 +698,7 @@ export default function EventManagementClient({
                         navigator.clipboard.writeText(fullUrl).catch(() => {});
                       }
                     }}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
                   >
                     Copy URL
                   </button>
@@ -718,7 +718,7 @@ export default function EventManagementClient({
             <div className="mb-6 space-y-3">
               <button
                 onClick={() => setShowAddExpense(true)}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
               >
                 {t.event.addExpense}
               </button>
@@ -730,13 +730,13 @@ export default function EventManagementClient({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white text-xl shadow-md group-hover:scale-110 transition-transform duration-200">
+                    <div className="w-10 h-10 bg-violet-500 rounded-lg flex items-center justify-center text-white text-xl shadow-md group-hover:scale-110 transition-transform duration-200">
                       📷
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-gray-900 dark:text-white">Smart Receipt Scanner</h3>
-                        <span className="px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded-full shadow-sm">
+                        <span className="px-2 py-0.5 bg-violet-500 text-white text-xs font-bold rounded-full shadow-sm">
                           COMING SOON
                         </span>
                       </div>
@@ -758,7 +758,7 @@ export default function EventManagementClient({
             <div className="mb-6">
               <button
                 onClick={() => setShowAddParticipant(true)}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+                className="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
               >
                 {t.event.addParticipant}
               </button>
@@ -1011,7 +1011,7 @@ export default function EventManagementClient({
                     <button
                       type="submit"
                       disabled={expenseStatus === "loading"}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-blue-400 disabled:to-purple-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
                     >
                       {expenseStatus === "loading" ? "Adding..." : "Add"}
                     </button>
@@ -1293,7 +1293,7 @@ export default function EventManagementClient({
                   <button
                     type="submit"
                     disabled={expenseStatus === "loading"}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-blue-400 disabled:to-purple-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none min-h-[48px] flex items-center justify-center"
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none min-h-[48px] flex items-center justify-center"
                   >
                       {expenseStatus === "loading" ? t.common.loading : t.event.update}
                   </button>
@@ -1566,7 +1566,7 @@ export default function EventManagementClient({
                               }
                             }}
                             disabled={importingItems || selectedItems.size === 0}
-                            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
+                            className="w-full bg-teal-600 hover:bg-teal-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
                           >
                             {importingItems ? 'Importing...' : `Import ${selectedItems.size} Selected Item${selectedItems.size !== 1 ? 's' : ''}`}
                           </button>
@@ -1600,7 +1600,7 @@ export default function EventManagementClient({
                             setSelectedItems(new Set());
                             setShowAddExpense(true);
                           }}
-                          className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+                          className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
                         >
                           Add as Single Expense
                         </button>
@@ -1659,7 +1659,7 @@ export default function EventManagementClient({
                   <div className="flex justify-end mt-2">
                     <button
                       onClick={() => setShowOCRTeaser(false)}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                      className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                     >
                       Sounds good
                     </button>
@@ -1725,7 +1725,7 @@ export default function EventManagementClient({
                   <button
                     type="submit"
                     disabled={participantStatus === "loading"}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-purple-400 disabled:to-pink-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
+                    className="flex-1 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:transform-none"
                   >
                     {participantStatus === "loading" ? "Adding..." : "Add Participant"}
                   </button>
