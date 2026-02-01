@@ -44,8 +44,10 @@ This project was created and developed by:
 - **Email Notifications** — Automatic personalized settlement emails when events close  
 - **Join / Leave Functionality** — Leave before closing if you have no expenses  
 - **Payment Tracking** — Mark payments as paid or pending  
-- **Mobile-First Design** — Fully responsive on all devices  
+- **Mobile-First Design** — Fully responsive and optimized for all devices  
+- **Multi-Language Support** — Available in English, Uzbek, and Russian with easy language switching  
 - **Real-time Updates** — Expenses and participants update instantly  
+- **Modern UI Design** — Clean, distinctive interface with solid color scheme  
 
 ---
 
@@ -60,6 +62,7 @@ This project was created and developed by:
 | **Database** | SQLite |
 | **Authentication** | JWT (email + password, email verification) |
 | **Email** | Nodemailer (Gmail SMTP) |
+| **Internationalization** | Custom i18n system (English, Uzbek, Russian) |
 | **Notifications** | Telegram Bot API (optional, admin support only) |
 
 ---
@@ -353,6 +356,21 @@ ISC License - see LICENSE file for details
 - **Support Form**: Use the contact form on the homepage
 - **Issues**: Open an issue on GitHub
 
+## 🎨 Recent Improvements
+
+### UI/UX Enhancements
+- **Solid Color Design**: Replaced gradient buttons with distinctive solid colors for a more unique, professional appearance
+- **Mobile Optimization**: Comprehensive mobile-first design improvements across all pages and components
+- **Multi-Language Support**: Full internationalization with English, Uzbek, and Russian translations
+- **Improved Email Templates**: Modern, branded email designs for verification, password reset, and settlement notifications
+- **Enhanced Accessibility**: Better focus states, touch targets, and keyboard navigation
+
+### Technical Improvements
+- **Custom Backend**: Complete migration from Supabase to Express.js + SQLite for full control
+- **JWT Authentication**: Secure token-based authentication with httpOnly cookies
+- **Docker Support**: Containerized deployment for both frontend and backend
+- **Type Safety**: Full TypeScript implementation across the codebase
+
 ---
 
-<p align="center"> Built with ❤️ by Alisher Ortiqov and Kamoliddin Yulbarsov using Next.js and an Express + SQLite backend </p>
+<p align="center"> Built with ❤️ by <a href="https://github.com/mcpeblocker">Alisher Ortiqov</a> and <a href="https://github.com/KamoliddinCS">Kamoliddin Yulbarsov</a> using Next.js and an Express + SQLite backend </p>
