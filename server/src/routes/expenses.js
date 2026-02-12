@@ -320,7 +320,8 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
     }
 
     if (updates.length > 0) {
-      updates.push('updated_at = datetime("now")');
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
       params.push(req.params.id);
       await dbRun(db, `UPDATE expenses SET ${updates.join(', ')} WHERE id = ?`, params);
     }

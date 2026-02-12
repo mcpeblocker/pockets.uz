@@ -140,7 +140,8 @@ router.put('/:id', authenticateToken, async (req, res, next) => {
       return res.status(400).json({ error: 'No fields to update' });
     }
 
-    updates.push('updated_at = datetime("now")');
+    updates.push('updated_at = ?');
+    params.push(new Date().toISOString());
     params.push(req.params.id);
 
     await dbRun(
@@ -210,7 +211,7 @@ router.post('/:id/close', authenticateToken, async (req, res, next) => {
     }
 
     // Update event status
-    await dbRun(db, "UPDATE events SET status = 'closed', updated_at = datetime('now') WHERE id = ?", [req.params.id]);
+    await dbRun(db, "UPDATE events SET status = 'closed', updated_at = ? WHERE id = ?", [new Date().toISOString(), req.params.id]);
 
     // Send settlement emails
     const participantEmails = participants

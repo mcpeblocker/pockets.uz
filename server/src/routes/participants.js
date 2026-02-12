@@ -134,8 +134,8 @@ router.patch('/:id/payment-status', authenticateToken, async (req, res, next) =>
 
     await dbRun(
       db,
-      `UPDATE participants SET payment_status = ?, updated_at = datetime('now') WHERE id = ?`,
-      [payment_status, req.params.id]
+      `UPDATE participants SET payment_status = ?, updated_at = ? WHERE id = ?`,
+      [payment_status, new Date().toISOString(), req.params.id]
     );
 
     const updated = await dbGet(db, 'SELECT * FROM participants WHERE id = ?', [req.params.id]);
