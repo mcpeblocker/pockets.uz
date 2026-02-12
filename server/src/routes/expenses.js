@@ -102,7 +102,7 @@ router.post('/', authenticateToken, upload.array('photos', 10), async (req, res,
     const db = getDatabase();
 
     // Verify event exists and is open
-    const event = await dbGet(db, 'SELECT id, status, owner_id FROM events WHERE id = ?', [eventId]);
+    const event = await dbGet(db, 'SELECT id, status, owner_id, currency FROM events WHERE id = ?', [eventId]);
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
     }
@@ -406,25 +406,28 @@ router.delete('/:id', authenticateToken, async (req, res, next) => {
 
     await dbRun(db, 'DELETE FROM expenses WHERE id = ?', [req.params.id]);
 
-    // Recalculate event currency
-    // const remainingExpenses = await dbAll(db, 'SELECT currency FROM expenses WHERE event_id = ?', [expense.event_id]);
-    // if (remainingExpenses.length === 0) {
-    //   await dbRun(db, "UPDATE events SET currency = 'USD' WHERE id = ?", [expense.event_id]);
-    // } else {
-    //   const currencyCounts = {};
-    //   remainingExpenses.forEach(e => {
-    //     currencyCounts[e.currency] = (currencyCounts[e.currency] || 0) + 1;
-    //   });
-    //   let dominantCurrency = 'USD';
-    //   let maxCount = 0;
-    //   Object.entries(currencyCounts).forEach(([curr, count]) => {
-    //     if (count > maxCount) {
-    //       maxCount = count;
-    //       dominantCurrency = curr;
-    //     }
-    //   });
-    //   await dbRun(db, 'UPDATE events SET currency = ? WHERE id = ?', [dominantCurrency, expense.event_id]);
-    // }
+    // Recalculate event currency based on remaining expenses
+    const remainingExpenses = await dbAll(db, 'SELECT currency FROM expenses WHERE event_id = ?', [expense.event_id]);
+    if (remainingExpenses.length > 0) {
+      // Calculate dominant currency from remaining expenses
+      const currencyCounts = {};
+      remainingExpenses.forEach(e => {
+        currencyCounts[e.currency] = (currencyCounts[e.currency] || 0) + 1;
+      });
+      let dominantCurrency = null;
+      let maxCount = 0;
+      Object.entries(currencyCounts).forEach(([curr, count]) => {
+        if (count > maxCount) {
+          maxCount = count;
+          dominantCurrency = curr;
+        }
+      });
+      // Only update if we found a dominant currency
+      if (dominantCurrency) {
+        await dbRun(db, 'UPDATE events SET currency = ? WHERE id = ?', [dominantCurrency, expense.event_id]);
+      }
+    }
+    // If no expenses remain, keep the current event currency (don't change to USD)
 
     res.json({ success: true });
   } catch (error) {
