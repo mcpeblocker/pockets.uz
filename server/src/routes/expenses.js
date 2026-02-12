@@ -132,7 +132,7 @@ router.post('/', authenticateToken, upload.array('photos', 10), async (req, res,
       db,
       `INSERT INTO expenses (id, event_id, description, amount, currency, paid_by_participant_id, expense_date)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [expenseId, eventId, description, parseFloat(amount), event.currency || 'USD', paidByParticipantId, expenseDate || new Date().toISOString().split('T')[0]]
+      [expenseId, eventId, description, parseFloat(amount), event.currency, paidByParticipantId, expenseDate || new Date().toISOString().split('T')[0]]
     );
 
     // Handle splits
