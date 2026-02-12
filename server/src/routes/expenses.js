@@ -407,24 +407,24 @@ router.delete('/:id', authenticateToken, async (req, res, next) => {
     await dbRun(db, 'DELETE FROM expenses WHERE id = ?', [req.params.id]);
 
     // Recalculate event currency
-    const remainingExpenses = await dbAll(db, 'SELECT currency FROM expenses WHERE event_id = ?', [expense.event_id]);
-    if (remainingExpenses.length === 0) {
-      await dbRun(db, "UPDATE events SET currency = 'USD' WHERE id = ?", [expense.event_id]);
-    } else {
-      const currencyCounts = {};
-      remainingExpenses.forEach(e => {
-        currencyCounts[e.currency] = (currencyCounts[e.currency] || 0) + 1;
-      });
-      let dominantCurrency = 'USD';
-      let maxCount = 0;
-      Object.entries(currencyCounts).forEach(([curr, count]) => {
-        if (count > maxCount) {
-          maxCount = count;
-          dominantCurrency = curr;
-        }
-      });
-      await dbRun(db, 'UPDATE events SET currency = ? WHERE id = ?', [dominantCurrency, expense.event_id]);
-    }
+    // const remainingExpenses = await dbAll(db, 'SELECT currency FROM expenses WHERE event_id = ?', [expense.event_id]);
+    // if (remainingExpenses.length === 0) {
+    //   await dbRun(db, "UPDATE events SET currency = 'USD' WHERE id = ?", [expense.event_id]);
+    // } else {
+    //   const currencyCounts = {};
+    //   remainingExpenses.forEach(e => {
+    //     currencyCounts[e.currency] = (currencyCounts[e.currency] || 0) + 1;
+    //   });
+    //   let dominantCurrency = 'USD';
+    //   let maxCount = 0;
+    //   Object.entries(currencyCounts).forEach(([curr, count]) => {
+    //     if (count > maxCount) {
+    //       maxCount = count;
+    //       dominantCurrency = curr;
+    //     }
+    //   });
+    //   await dbRun(db, 'UPDATE events SET currency = ? WHERE id = ?', [dominantCurrency, expense.event_id]);
+    // }
 
     res.json({ success: true });
   } catch (error) {
